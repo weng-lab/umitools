@@ -3,6 +3,7 @@
 import gzip
 import sys
 import argparse
+from struct import unpack
 
 class RunStats():
     """It records the info for one run
@@ -48,7 +49,15 @@ class Read():
         self.r_info = r_info
         self.r_qual = r_qual
         self.mate = mate
-        
+
+def is_gzipped(filename):
+    # 1F 8B 08 00 / gz magic number
+    magic = ('\x1f', '\x8b', '\x08', '\x00')
+
+    with open(filename, 'rb') as handle:
+        s = unpack('cccc', handle.read(4))
+        return s==magic
+    
 def process_read(read, stats):
     """This function processes one read. The "mate" option can be "r1" or "r2". Returns 4 empty strings if the read is dropped
 """
@@ -146,7 +155,8 @@ def main():
                         default='GGG,TCA,ATC')
     parser.add_argument('--umi-padding',
                         help='Set the nucleotide (for preventing ligation bias) after the UMI locators. \
-                        If you have multiple, separate them by comma. e.g. A,C,G,T', default='T')
+                        If you have multiple, separate them by comma. e.g. A,C,G,T. The quality for this nt is \
+                        sometimes low, so the default is all possible four nucleotides', default='A,C,G,T')
     parser.add_argument('-q', '--quality',
                         help='Quality (phred quality score) cutoff for UMI. Default is 13, \
                         that is UMI with qualities >= 13 will be kept. This program assumes \
@@ -207,7 +217,16 @@ def main():
         stats[i] = RunStats()
     f1 = open(fn1)
     f2 = open(fn2)
-
+    if is_gzipped(fn1):
+        f1 = gzip.open(fn1)
+        print >>sys.stderr, "r1 input is gzipped."
+    else:
+        f1 = open(fn1)
+    if is_gzipped(fn2):
+        f2 = gzip.open(fn2)
+        print >>sys.stderr, "r2 input is gzipped."
+    else:
+        f2 = open(fn2)
     while True:
         c += 1
         if c%4==1:
@@ -249,8 +268,9 @@ def main():
     f2.close()
     # out1.close()
     # out2.close()
+    print >>sys.stderr, ""
     for i in ("r1", "r2"):
-        print "Stats for " + i
+        print >>sys.stderr, "Stats for " + i
         stats[i].summary()
     print >>sys.stderr, ""
     print >>sys.stderr, "Additional reads dropped because its mate is dropped:\t" + str(n_additional_drop_due_to_mate)
