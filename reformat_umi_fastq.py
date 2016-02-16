@@ -4,9 +4,6 @@ import gzip
 import sys
 import argparse
 
-global c
-c = 0
-
 class RunStats():
     """It records the info for one run
 """
@@ -36,7 +33,7 @@ class RunStats():
         print >>sys.stderr, "Reads w/ locator:\t" + str(self["n_with_locator"])
         print >>sys.stderr, "-" * 80
         print >>sys.stderr, "Reads w/ N's in UMI:\t" + str(self["n_with_ambiguous_umi"])
-        print >>sys.stderr, "Reads w/ wrong padding nt (A/C/G):\t" + str(self["n_with_wrong_padding"])
+        print >>sys.stderr, "Reads w/ wrong padding nt:\t" + str(self["n_with_wrong_padding"])
         print >>sys.stderr, "Reads w/ low-quality UMI:\t" + str(self["n_bad_quality_umi"])
         print >>sys.stderr, "-" * 80
         print >>sys.stderr, "Reads w/ proper UMI:\t" + str(self["n_good_reads"])
@@ -83,7 +80,7 @@ def process_read(read, stats):
             stats[mate]["all_umi_locator"][my_umi] =1
         my_umi_qual = r_qual[0:umi_len]
         if my_umi.find("N") == -1:
-            if r_seq[umi_len + umi_locator_len] == umi_downstream:
+            if r_seq[umi_len + umi_locator_len] in umi_downstream:
                 if is_good_phred(my_umi_qual, qc):
                     my_seq = r_seq[umi_len + umi_locator_len + umi_downstream_len: ]
                     stats[mate]["n_good_reads"] += 1
@@ -138,15 +135,29 @@ nt has a quality score below qc, this function returns False
 # print phred_checker("BBC", "B")
 # print phred_checker("ABC", "B")
 def main():
-    parser = argparse.ArgumentParser(description='A script to reformat r1 reads in a UMI fastq file so that the name of each record contains the UMI')
-    parser.add_argument('-l', '--left', help='the input fastq file for r1. If you want to pipe in the input, you can use /dev/stdin', required=True)
-    parser.add_argument('-r', '--right', help='the input fastq file for r2. If you want to pipe in the input, you can use /dev/stdin', required=True)
+    parser = argparse.ArgumentParser(description='A script to reformat r1 reads in a UMI fastq file so that the name of each record contains the UMI',
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-l', '--left', help='the input fastq file for r1.', required=True)
+    parser.add_argument('-r', '--right', help='the input fastq file for r2.', required=True)
     parser.add_argument('-L', '--left-out', help='the output fastq file for r1', required=True)
     parser.add_argument('-R', '--right-out', help='the output fastq file for r2', required=True)
-    parser.add_argument('-q', '--quality', help='Quality (phred quality score) cutoff for UMI. Default is 20, that is UMI with qualities >= 20 will be kept. This program assumes the phred quality scores in the fastq file are using sanger format', required=False, type=int, default=20)
+    parser.add_argument('--umi-locator',
+                        help='Set the UMI locators. If you have multiple, separate them by comma. e.g. GGG,TCA,ATC',
+                        default='GGG,TCA,ATC')
+    parser.add_argument('--umi-padding',
+                        help='Set the nucleotide (for preventing ligation bias) after the UMI locators. \
+                        If you have multiple, separate them by comma. e.g. A,C,G,T', default='T')
+    parser.add_argument('-q', '--quality',
+                        help='Quality (phred quality score) cutoff for UMI. Default is 13, \
+                        that is UMI with qualities >= 13 will be kept. This program assumes \
+                        the phred quality scores in the fastq file are using sanger format',
+                        required=False, type=int, default=13)
     parser.add_argument('-D', '--debug', help='Turn on debugging mode', action="store_true")
 
-    # Sanger format can encode a Phred quality score from 0 to 93 using ASCII 33 to 126 (although in raw read data the Phred quality score rarely exceeds 60, higher scores are possible in assemblies or read maps). Also used in SAM format.[4] Coming to the end of February 2011, Illumina's newest version (1.8) of their pipeline CASAVA will directly produce fastq in Sanger format, according to the announcement on seqanswers.com forum.[5]
+    # Sanger format can encode a Phred quality score from 0 to 93 using ASCII 33 to 126 (although in raw read data
+    # the Phred quality score rarely exceeds 60, higher scores are possible in assemblies or read maps). Also used
+    # in SAM format.[4] Coming to the end of February 2011, Illumina's newest version (1.8) of their pipeline CASAVA
+    # will directly produce fastq in Sanger format, according to the announcement on seqanswers.com forum.[5]
     # These variables do not change during one run. They are assgined values once in the main() function
     global DEBUG
     global qc
@@ -155,28 +166,37 @@ def main():
     global umi_locator_len
     global umi_downstream
     global umi_downstream_len
-
+    global c                              # Read count
+    c = 0
     args = parser.parse_args()
     DEBUG = args.debug
     if DEBUG:
         print >>sys.stderr, "Debugging mode is on"
     # Quality cutoff
     qc = chr(args.quality + 33)
-    print >>sys.stderr, "Quality cutoff in ASCII:\t" + qc
+    print >>sys.stderr, "Quality cutoff in ASCII: " + qc
     fn1 = args.left
     fn2 = args.right
 
     out1 = open(args.left_out, "w")
     out2 = open(args.right_out, "w")
 
-    c = 0
-
     umi_len = 5
-    umi_locators = ['GGG', 'GAT', 'TGA']
-    umi_locator_len = 3 # len(umi_locator)
+    umi_locators = args.umi_locator.split(",")
+    # umi_locators = ['GGG', 'GAT', 'TGA']
+    print >>sys.stderr, "UMI locators: ",
+    for i in umi_locators:
+        print >>sys.stderr, i,
+    print >>sys.stderr, ""
+    umi_locator_len = len(umi_locators[0])
     # Trim one nucleotide after the GGG
-    umi_downstream = 'T'
-    umi_downstream_len = len(umi_downstream)
+    # umi_downstream = 'T'
+    umi_downstream = args.umi_padding.split(",")
+    umi_downstream_len = len(umi_downstream[0])
+    print >>sys.stderr, "UMI padding: ",
+    for i in umi_downstream:
+        print >>sys.stderr, i,
+    print >>sys.stderr, ""
 
     n_additional_drop_due_to_mate = 0
     n_proper_pair = 0
@@ -230,7 +250,7 @@ def main():
     # out1.close()
     # out2.close()
     for i in ("r1", "r2"):
-        print i
+        print "Stats for " + i
         stats[i].summary()
     print >>sys.stderr, ""
     print >>sys.stderr, "Additional reads dropped because its mate is dropped:\t" + str(n_additional_drop_due_to_mate)
