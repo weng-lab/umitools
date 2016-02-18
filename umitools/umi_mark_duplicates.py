@@ -12,7 +12,7 @@ import pysam as ps
 # from Bio.Seq import Seq
 import sys
 import argparse
-import sys
+import os
 from multiprocessing import Process, Queue, Pool
 import time
 start_time = time.time()
@@ -34,25 +34,6 @@ start_time = time.time()
 # For a sorted bam file, in case 1, the 5' end of r1 and template length can determine the template;
 # in case 2, the 5' end of r2 and template length can determine the template
 # 
-parser = argparse.ArgumentParser(description='A pair of FASTQ files are first reformatted using reformat_umi_fastq.py and then is aligned to get the bam file. This script can parse the umi barcode in the name of each read to mark duplicates.')
-parser.add_argument('-f', '--file', help='the input bam file', required=True)
-parser.add_argument('-p', '--processes', help='number of processes', required=False, type=int, default=8)
-# parser.add_argument('-c', '--chromosome', help='the chromosome that you want to process', required=True)
-# parser.add_argument('-a', '--add-tag', help='add a FM (five prime end of the mate) tag as the preprocessing step', action="store_true")
-parser.add_argument('-d', '--debug', help='turn on debug mode', action="store_true")
-parser.add_argument('-c', '--count', help='Count the number of raw reads for each locus (determined by pairs)', action="store_true")
-# parser.add_argument('-l', '--read-length', help='if read length is given, it can be used to more accurately mark duplicates', type=int, default=-1)
-# parser.add_argument('-o', '--output', help='the output file', required=True)
-args = parser.parse_args()
-processes = args.processes
-# True: output the sequences on the reference strand
-# False: output the sequences in the orignal direction
-global infile
-infile = args.file
-# bam = ps.AlignmentFile(infile, "rb")
-# readlength = args.read_length
-count_loc_flag = args.count
-DEBUG = args.debug
 
 # for kernprof
 # kernprof -l -v ~/repo/tools/mark_duplicates_umi.py -f test300000.sorted.bam
@@ -129,7 +110,7 @@ def mark_duplicates(infile, chromosome):
     bam.close()
     # print >>sys.stderr, r1fwd_ids
     # print >>sys.stderr, r1fwd_dup
-    # print >>sys.stderr, r2fwd_ids    
+    # print >>sys.stderr, r2fwd_ids
     
     # The 2nd pass:
     bam = ps.AlignmentFile(infile, "rb")
@@ -147,16 +128,72 @@ def mark_duplicates(infile, chromosome):
 
 def mark_duplicates_worker(chromosome):
     mark_duplicates(infile, chromosome)
+
+def merge_bam(infile, refs):
+    if infile.endswith(".bam"):
+        prefix = infile[:-4]
+    if prefix.endswith(".sorted"):
+        prefix = infile[:-5]
+    # Open the input file to get the header template
+    tmp = ps.AlignmentFile(infile, "rb")
+    output_fn = prefix + ".deumi.sorted.bam"
+    output = ps.AlignmentFile(output_fn, "wb", template=tmp)
+    tmp.close()
+    for chromosome in sorted(refs):
+        fn = infile + "." + chromosome + ".bam"
+        ps.index(fn)
+        # print infile + "." + chromosome + ".bam"
+        bam = ps.AlignmentFile(infile + "." + chromosome + ".bam", "rb")
+        for read in bam.fetch(until_eof=True):
+            output.write(read)
+        bam.close()
+        os.remove(fn)
+        # Also remove the indices for the temp files
+        os.remove(fn + ".bai")
+    output.close()
+    ps.index(output_fn)
     
+def print2(a):
+    print >>sys.stderr, a
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='A pair of FASTQ files are first reformatted using reformat_umi_fastq.py and then is aligned to get the bam file. This script can parse the umi barcode in the name of each read to mark duplicates.')
+    parser.add_argument('-f', '--file', help='the input bam file', required=True)
+    parser.add_argument('-p', '--processes', help='number of processes', required=False, type=int, default=8)
+    # parser.add_argument('-c', '--chromosome', help='the chromosome that you want to process', required=True)
+    # parser.add_argument('-a', '--add-tag', help='add a FM (five prime end of the mate) tag as the preprocessing step', action="store_true")
+    parser.add_argument('-d', '--debug', help='turn on debug mode', action="store_true")
+    parser.add_argument('-c', '--count', help='Count the number of raw reads for each locus (determined by pairs)', action="store_true")
+    # parser.add_argument('-l', '--read-length', help='if read length is given, it can be used to more accurately mark duplicates', type=int, default=-1)
+    # parser.add_argument('-o', '--output', help='the output file', required=True)
+    args = parser.parse_args()
+    processes = args.processes
+    # True: output the sequences on the reference strand
+    # False: output the sequences in the orignal direction
+    global infile
+    infile = args.file
+    # bam = ps.AlignmentFile(infile, "rb")
+    # readlength = args.read_length
+    count_loc_flag = args.count
+    DEBUG = args.debug
+
     # mark_duplicates(bam, processes=processes)
     # mark_duplicates_helper(infile, processes=processes)
     bam_tmp = ps.AlignmentFile(infile, "rb")
+    if not bam_tmp.has_index():
+        print >>sys.stderr, "Input file %s is not indexed. I will index it."
+        ps.index(infile)
     refs = bam_tmp.references
     f = lambda x: mark_duplicates(infile, x)
     p = Pool(processes)
     # Goddamned Pool does not accept lambda functions!
+    print2("Marking duplicates...")
     p.map(mark_duplicates_worker, refs)
     # mark_duplicates_worker("chr10")
-    print("--- %s seconds ---" % (time.time() - start_time))
-    
+    print2("Marking duplicates is done.")
+    t1 = time.time()
+    print2("--- %s seconds ---" % (t1 - start_time))
+    print2("Merging from %d files..." % len(refs))
+    merge_bam(infile, refs)
+    print2("Merging is done")
+    t2 = time.time()
+    print2("--- %s seconds ---" % (t2-t1))

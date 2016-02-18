@@ -80,7 +80,7 @@ def is_gzipped(filename):
     with open(filename, 'rb') as handle:
         s = unpack('cccc', handle.read(4))
         return s==magic
-    
+# @profile
 def process_read(read, stats):
     """This function processes one read. The "mate" option can be "r1" or "r2". Returns 4 empty strings if the read is dropped
 """
@@ -168,8 +168,7 @@ nt has a quality score below qc, this function returns False
             break
     return ret
 
-# print phred_checker("BBC", "B")
-# print phred_checker("ABC", "B")
+# @profile
 def main():
     parser = argparse.ArgumentParser(description='A script to reformat r1 reads in a UMI fastq file so that the name of each record contains the UMI',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
