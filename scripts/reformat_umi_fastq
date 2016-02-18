@@ -1,0 +1,5 @@
+#!/usr/bin/env python
+
+import umitools.reformat_umi_fastq
+
+umitools.reformat_umi_fastq.main()

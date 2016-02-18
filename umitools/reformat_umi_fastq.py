@@ -1,10 +1,12 @@
 #!/usr/bin/env python
-
+import operator
 import gzip
 import sys
 import argparse
 from struct import unpack
 
+def print2(a):
+    print >>sys.stderr, a
 class RunStats():
     """It records the info for one run
 """
@@ -23,22 +25,41 @@ class RunStats():
         self.stats["n_good_reads"] = 0
         # This stores counts of all UMIs for good reads only
         self.stats["good_umi_locator"] = {}
+        # padding (usually T, or it can be A,T,C,G
+        self.stats["padding"] = {"A": 0, "C": 0, "G": 0, "T": 0, "N": 0}
+        # For ligation bias
+        self.stats["ligation"] = {"A": 0, "C": 0, "G": 0, "T": 0, "N": 0}
     def __getitem__(self, key):
         return self.stats[key]
     def __setitem__(self, key, value):
         self.stats[key] = value
     def summary(self):
-        print >>sys.stderr, "-" * 80
-        print >>sys.stderr, "Total:\t" + str((c-1)/4)
-        print >>sys.stderr, "Reads w/o locator:\t" + str(self["n_without_locator"])
-        print >>sys.stderr, "Reads w/ locator:\t" + str(self["n_with_locator"])
-        print >>sys.stderr, "-" * 80
-        print >>sys.stderr, "Reads w/ N's in UMI:\t" + str(self["n_with_ambiguous_umi"])
-        print >>sys.stderr, "Reads w/ wrong padding nt:\t" + str(self["n_with_wrong_padding"])
-        print >>sys.stderr, "Reads w/ low-quality UMI:\t" + str(self["n_bad_quality_umi"])
-        print >>sys.stderr, "-" * 80
-        print >>sys.stderr, "Reads w/ proper UMI:\t" + str(self["n_good_reads"])
-        print >>sys.stderr, "-" * 80
+        print2("-" * 80)
+        print2("Total:\t" + str((c-1)/4) )
+        print2("Reads w/o locator:\t" + str(self["n_without_locator"]) )
+        print2("Reads w/ locator:\t" + str(self["n_with_locator"]) )
+        print2("-" * 80 )
+        print2("Reads w/ N's in UMI:\t" + str(self["n_with_ambiguous_umi"]) )
+        print2("Reads w/ wrong padding nt:\t" + str(self["n_with_wrong_padding"]) )
+        print2("Reads w/ low-quality UMI:\t" + str(self["n_bad_quality_umi"]) )
+        print2("-" * 80)
+        print2("Reads w/ proper UMI:\t" + str(self["n_good_reads"]) )
+        print2("-" * 80)
+    def umi_composition(self):
+        print2("UMI composition for good reads")
+        for i in self.stats["good_umi_locator"]:
+            print2( i + " " + str(self.stats["good_umi_locator"][i]) )
+        print2("UMI compoistion for all reads")
+        my_sorted = sorted(self.stats["all_umi_locator"].items(), key=operator.itemgetter(1), reverse=True)
+        for i in my_sorted:
+            print2( str(i[0]) + " " + str(i[1]) )
+    def padding_usage(self):
+        for i in sorted(self.stats["padding"]):
+            print i + "\t" + str(self.stats["padding"][i])
+    def ligation_bias(self):
+        for i in sorted(self.stats["ligation"]):
+            print i + "\t" + str(self.stats["ligation"][i])
+        
         
 class Read():
     """ Informtion for one read including r_name, r_seq, r_info, r_qual, mate and so on...
@@ -49,7 +70,9 @@ class Read():
         self.r_info = r_info
         self.r_qual = r_qual
         self.mate = mate
-
+        self.my_umi_locator = r_seq[umi_len : umi_len + umi_locator_len]
+        self.my_umi = my_umi = r_seq[0:umi_len]
+        self.my_umi_qual = r_qual[0:umi_len]
 def is_gzipped(filename):
     # 1F 8B 08 00 / gz magic number
     magic = ('\x1f', '\x8b', '\x08', '\x00')
@@ -80,19 +103,23 @@ def process_read(read, stats):
         print "Locator:\t" + ' ' * 5 + r_seq[umi_len : umi_len + umi_locator_len]
         print "UMI:\t\t" + r_seq[0: umi_len]
         print "What's left:\t" + ' ' * 9 + r_seq[umi_len + umi_locator_len + umi_downstream_len: ]
-    if r_seq[umi_len : umi_len + umi_locator_len] in umi_locators:
+    my_umi_locator = read.my_umi_locator # r_seq[umi_len : umi_len + umi_locator_len]
+    my_umi = read.my_umi # r_seq[0:umi_len]
+    if my_umi_locator in stats[mate]["all_umi_locator"]:
+        stats[mate]["all_umi_locator"][my_umi_locator] += 1
+    else:
+        stats[mate]["all_umi_locator"][my_umi_locator] = 1
+    if my_umi_locator in umi_locators:
         stats[mate]["n_with_locator"] += 1
-        my_umi = r_seq[0:umi_len]
-        if my_umi in stats[mate]["all_umi_locator"]:
-            stats[mate]["all_umi_locator"][my_umi] += 1
-        else:
-            stats[mate]["all_umi_locator"][my_umi] =1
-        my_umi_qual = r_qual[0:umi_len]
+        my_umi_qual = read.my_umi_qual # r_qual[0:umi_len]
         if my_umi.find("N") == -1:
-            if r_seq[umi_len + umi_locator_len] in umi_downstream:
+            padding = r_seq[umi_len + umi_locator_len]
+            if padding in umi_downstream:
+                stats[mate]["padding"][padding] += 1
                 if is_good_phred(my_umi_qual, qc):
                     my_seq = r_seq[umi_len + umi_locator_len + umi_downstream_len: ]
                     stats[mate]["n_good_reads"] += 1
+                    stats[mate]["ligation"][my_seq[0]] += 1
                     # I do not modify read name here,
                     # since we need to store barcodes from both reads and put the
                     # concatenated barcode into both reads to make downstream analysis easier
@@ -102,10 +129,10 @@ def process_read(read, stats):
                     ret_info = r_info
                     ret_qual = r_qual[umi_len + umi_locator_len + umi_downstream_len: ]
                     ret_bc = my_umi
-                    if my_umi in stats[mate]["good_umi_locator"]:
-                        stats[mate]["good_umi_locator"][my_umi] += 1
+                    if my_umi_locator in stats[mate]["good_umi_locator"]:
+                        stats[mate]["good_umi_locator"][my_umi_locator] += 1
                     else:
-                        stats[mate]["good_umi_locator"][my_umi] = 1
+                        stats[mate]["good_umi_locator"][my_umi_locator] = 1
                 else:
                     stats[mate]["n_bad_quality_umi"] += 1
                     if DEBUG:
@@ -150,6 +177,7 @@ def main():
     parser.add_argument('-r', '--right', help='the input fastq file for r2.', required=True)
     parser.add_argument('-L', '--left-out', help='the output fastq file for r1', required=True)
     parser.add_argument('-R', '--right-out', help='the output fastq file for r2', required=True)
+    parser.add_argument('-v', '--verbose', help='Also include detailed stats for UMI and padding usage', action="store_true")
     parser.add_argument('--umi-locator',
                         help='Set the UMI locators. If you have multiple, separate them by comma. e.g. GGG,TCA,ATC',
                         default='GGG,TCA,ATC')
@@ -187,22 +215,28 @@ def main():
     print >>sys.stderr, "Quality cutoff in ASCII: " + qc
     fn1 = args.left
     fn2 = args.right
-
+    verbose = args.verbose
     out1 = open(args.left_out, "w")
     out2 = open(args.right_out, "w")
 
     umi_len = 5
-    umi_locators = args.umi_locator.split(",")
+    umi_locators = {}
+    tmp = args.umi_locator.split(",")
+    for i in tmp:
+        umi_locators[i] = True
     # umi_locators = ['GGG', 'GAT', 'TGA']
     print >>sys.stderr, "UMI locators: ",
     for i in umi_locators:
         print >>sys.stderr, i,
     print >>sys.stderr, ""
-    umi_locator_len = len(umi_locators[0])
+    umi_locator_len = len(tmp[0])
     # Trim one nucleotide after the GGG
     # umi_downstream = 'T'
-    umi_downstream = args.umi_padding.split(",")
-    umi_downstream_len = len(umi_downstream[0])
+    umi_downstream = {}
+    tmp = args.umi_padding.split(",")
+    for i in tmp:
+        umi_downstream[i] = True
+    umi_downstream_len = len(tmp[0])
     print >>sys.stderr, "UMI padding: ",
     for i in umi_downstream:
         print >>sys.stderr, i,
@@ -272,9 +306,22 @@ def main():
     for i in ("r1", "r2"):
         print >>sys.stderr, "Stats for " + i
         stats[i].summary()
+        
     print >>sys.stderr, ""
     print >>sys.stderr, "Additional reads dropped because its mate is dropped:\t" + str(n_additional_drop_due_to_mate)
     print >>sys.stderr, "Final proper read pairs:\t" + str(n_proper_pair)
-
+        
+    print2("")
+    if verbose:
+        for i in ("r1", "r2"):
+            print2("=" * 80)
+            print2(i + " UMI composition")
+            stats[i].umi_composition()
+            print2("=" * 80)
+            print2(i + " padding usage")
+            stats[i].padding_usage()
+            print2("=" * 80)
+            print2(i + " ligation bias")
+            stats[i].ligation_bias()
 if __name__ == "__main__":
     main()

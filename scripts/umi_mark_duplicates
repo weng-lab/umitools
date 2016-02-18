@@ -1,0 +1,5 @@
+#!/usr/bin/env python
+
+import umitools.umi_mark_duplicates
+
+umitools.umi_mark_duplicates.main()

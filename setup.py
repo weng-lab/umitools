@@ -8,7 +8,7 @@ from codecs import open
 from os import path
 
 setup(name="umitools",
-      version='0.1.0',
+      version='0.1.2',
       description='A toolset for handling sequencing data with unique molecular identifiers (UMIs)',
       url='https://github.com/weng-lab/umitools',
       author="Yu Fu",
@@ -23,5 +23,12 @@ setup(name="umitools",
                    'Programming Language :: Python :: 2.7',
                    ],
       keywords='umi umitools unique molecular identifier',
-      packages=find_packages(exclude=['contrib', 'docs', 'tests'])
+      install_requires=['pysam'],
+      packages=find_packages(exclude=['contrib', 'docs', 'tests']),
+      # data_files=[('my_data', ['data/umitools.test.r1.fq.gz', 'data/umitools.test.r2.fq.gz'])],
+      package_data={
+          "umitools": ['data/*.fq.gz'],
+          },
+      # entry_points={'console_scripts': ['sample=sample:main', ],
+      scripts=['scripts/reformat_umi_fastq', 'scripts/umi_mark_duplicates'],
 )
