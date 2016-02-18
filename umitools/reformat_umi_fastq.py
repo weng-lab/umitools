@@ -55,10 +55,10 @@ class RunStats():
             print2( str(i[0]) + " " + str(i[1]) )
     def padding_usage(self):
         for i in sorted(self.stats["padding"]):
-            print i + "\t" + str(self.stats["padding"][i])
+            print2(i + "\t" + str(self.stats["padding"][i]))
     def ligation_bias(self):
         for i in sorted(self.stats["ligation"]):
-            print i + "\t" + str(self.stats["ligation"][i])
+            print2(i + "\t" + str(self.stats["ligation"][i]))
         
         
 class Read():
@@ -184,7 +184,7 @@ def main():
     parser.add_argument('--umi-padding',
                         help='Set the nucleotide (for preventing ligation bias) after the UMI locators. \
                         If you have multiple, separate them by comma. e.g. A,C,G,T. The quality for this nt is \
-                        sometimes low, so the default is all possible four nucleotides', default='A,C,G,T')
+                        sometimes low, so the default is all possible four nucleotides', default='A,C,G,T,N')
     parser.add_argument('-q', '--quality',
                         help='Quality (phred quality score) cutoff for UMI. Default is 13, \
                         that is UMI with qualities >= 13 will be kept. This program assumes \
@@ -317,9 +317,11 @@ def main():
             print2("=" * 80)
             print2(i + " UMI composition")
             stats[i].umi_composition()
+
             print2("=" * 80)
             print2(i + " padding usage")
             stats[i].padding_usage()
+            
             print2("=" * 80)
             print2(i + " ligation bias")
             stats[i].ligation_bias()
