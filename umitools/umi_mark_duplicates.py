@@ -133,7 +133,7 @@ def merge_bam(infile, refs):
     if infile.endswith(".bam"):
         prefix = infile[:-4]
     if prefix.endswith(".sorted"):
-        prefix = infile[:-5]
+        prefix = prefix[:-7]
     # Open the input file to get the header template
     tmp = ps.AlignmentFile(infile, "rb")
     output_fn = prefix + ".deumi.sorted.bam"
@@ -180,7 +180,7 @@ if __name__ == "__main__":
     # mark_duplicates_helper(infile, processes=processes)
     bam_tmp = ps.AlignmentFile(infile, "rb")
     if not bam_tmp.has_index():
-        print >>sys.stderr, "Input file %s is not indexed. I will index it."
+        print >>sys.stderr, "Input file %s is not indexed and will be indexed."
         ps.index(infile)
     refs = bam_tmp.references
     f = lambda x: mark_duplicates(infile, x)
