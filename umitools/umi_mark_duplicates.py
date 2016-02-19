@@ -180,7 +180,7 @@ if __name__ == "__main__":
     # mark_duplicates_helper(infile, processes=processes)
     bam_tmp = ps.AlignmentFile(infile, "rb")
     if not bam_tmp.has_index():
-        print >>sys.stderr, "Input file %s is not indexed and will be indexed."
+        print >>sys.stderr, "Input file %s is being indexed." % infile
         ps.index(infile)
     refs = bam_tmp.references
     f = lambda x: mark_duplicates(infile, x)
