@@ -155,7 +155,8 @@ def merge_bam(infile, refs):
     
 def print2(a):
     print >>sys.stderr, a
-if __name__ == "__main__":
+
+def main():
     parser = argparse.ArgumentParser(description='A pair of FASTQ files are first reformatted using reformat_umi_fastq.py and then is aligned to get the bam file. This script can parse the umi barcode in the name of each read to mark duplicates.')
     parser.add_argument('-f', '--file', help='the input bam file', required=True)
     parser.add_argument('-p', '--processes', help='number of processes', required=False, type=int, default=8)
@@ -197,3 +198,6 @@ if __name__ == "__main__":
     print2("Merging is done")
     t2 = time.time()
     print2("--- %s seconds ---" % (t2-t1))
+
+if __name__ == "__main__":
+    main()
