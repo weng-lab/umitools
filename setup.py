@@ -8,16 +8,17 @@ from codecs import open
 from os import path
 
 setup(name="umitools",
-      version='0.1.4',
+      version='0.1.6',
       description='A toolset for handling sequencing data with unique molecular identifiers (UMIs)',
       url='https://github.com/weng-lab/umitools',
       author="Yu Fu",
       author_email="yfu@bu.edu",
-      license="",
+      license="GPLv3",
       classifiers=['Development Status :: 3 - Alpha',
                    'Topic :: Scientific/Engineering :: Bio-Informatics',
                    'Intended Audience :: Science/Research',
                    'Intended Audience :: Developers',
+                   'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
                    'Programming Language :: Python :: 2',
                    'Programming Language :: Python :: 2.6',
                    'Programming Language :: Python :: 2.7',
@@ -31,8 +32,8 @@ setup(name="umitools",
           },
       entry_points={
           'console_scripts': [
-              'reformatFastq=umitools.reformat_umi_fastq:main',
-              'markDuplicates=umitools.umi_mark_duplicates:main',              
+              'reformat_fastq=umitools.reformat_umi_fastq:main',
+              'mark_duplicates=umitools.umi_mark_duplicates:main',              
               ]
               }
       # scripts=['scripts/reformat_umi_fastq', 'scripts/umi_mark_duplicates'],

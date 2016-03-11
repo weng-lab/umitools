@@ -163,7 +163,7 @@ def main():
     # parser.add_argument('-c', '--chromosome', help='the chromosome that you want to process', required=True)
     # parser.add_argument('-a', '--add-tag', help='add a FM (five prime end of the mate) tag as the preprocessing step', action="store_true")
     parser.add_argument('-d', '--debug', help='turn on debug mode', action="store_true")
-    parser.add_argument('-c', '--count', help='Count the number of raw reads for each locus (determined by pairs)', action="store_true")
+    parser.add_argument('-c', '--count', help='Count the number of raw reads for each locus (determined by pairs)', action="store_true", default=False)
     # parser.add_argument('-l', '--read-length', help='if read length is given, it can be used to more accurately mark duplicates', type=int, default=-1)
     # parser.add_argument('-o', '--output', help='the output file', required=True)
     args = parser.parse_args()
@@ -174,6 +174,7 @@ def main():
     infile = args.file
     # bam = ps.AlignmentFile(infile, "rb")
     # readlength = args.read_length
+    global count_loc_flag
     count_loc_flag = args.count
     DEBUG = args.debug
 
