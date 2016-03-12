@@ -15,6 +15,7 @@ import argparse
 import os
 from multiprocessing import Process, Queue, Pool
 import time
+
 start_time = time.time()
 
 # Two cases:
@@ -70,14 +71,15 @@ def mark_duplicates(infile, chromosome):
             print >>sys.stderr, "read_info: Barcode: " + read_bc
             print >>sys.stderr, "read_info: Read: " + str(read)        
         if not read.is_reverse and read.is_read1:
-            read_id = str(read5) + read_bc + str(read.template_length)
+            # We do not need to get abs(read.template_length) as it is guaranteed
+            # to be positive here because we are only selecting the leftmost mate
             if count_loc_flag == True:
                 locus_id = str(read5) + "," + str(read.template_length)
                 if locus_id in counts_loc:
                     counts_loc[locus_id] += 1
                 else:
                     counts_loc[locus_id] = 1
-            # read_id = (read5, read_bc, read.template_length)            
+            read_id = (read5, read_bc, read.template_length)            
             if DEBUG:
                 print >>sys.stderr, read_id + "\t" + str(read)
             if read_id in r1fwd_ids:
@@ -92,6 +94,8 @@ def mark_duplicates(infile, chromosome):
             # read_id = str(read5) + read_bc + str(-read.template_length)
             # read_id = str(read5) + read_bc + str(read.template_length)
             # read_id = (read5, read_bc, read.template_length)
+            # We do not need to get abs(read.template_length) as it is guaranteed
+            # to be positive here because we are only selecting the leftmost mate
             read_id = str(read5) + read_bc + str(read.template_length)
             if count_loc_flag == True:
                 locus_id = str(read5) + "," + str(read.template_length)
