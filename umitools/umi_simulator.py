@@ -15,11 +15,12 @@ class UMIRead:
 which may or may not have mutations
 '''
     def __init__(self, *args):
-        self.species = args[0]
-        if len(args) == 2:
-            self.seq = args[1]
+        self.gid = args[0]
+        self.species = args[1]
+        if len(args) == 3:
+            self.seq = args[2]
         else:
-            self.seq = args[0]
+            self.seq = args[1]
         
     def amplify(self, prob=0.7, error=1e-4):
         ## Default PCR amplification efficiency
@@ -30,7 +31,7 @@ which may or may not have mutations
                }
         if random.random() <= prob:
             if error == 0:
-                return (UMIRead(self.species, self.seq), UMIRead(self.species, self.seq))
+                return (UMIRead(self.gid, self.species, self.seq), UMIRead(self.gid, self.species, self.seq))
             else:
                 new = []
                 for i in range(len(self.seq)):
@@ -40,11 +41,11 @@ which may or may not have mutations
                     else:
                         new.append(self.seq[i])
                 # The species after amplification never changes
-                return (UMIRead(self.species, self.seq), UMIRead(self.species, ''.join(new)))
+                return (UMIRead(self.gid, self.species, self.seq), UMIRead(self.gid, self.species, ''.join(new)))
         else:
-            return (UMIRead(self.species, self.seq), )
+            return (UMIRead(self.gid, self.species, self.seq), )
     def __repr__(self):
-        return "UMI: species %s seq %s" % (self.species, self.seq)
+        return "UMI: id %s species %s seq %s" % (self.gid, self.species, self.seq)
 
     
 def add_sequencing_error(r, error=0.01):
@@ -56,7 +57,7 @@ def add_sequencing_error(r, error=0.01):
     'T': ('A', 'C', 'G')
            }
     if error == 0:
-        return (UMIRead(r.species, r.seq))
+        return (UMIRead(r.gid, r.species, r.seq))
     else:
         new = []
         for i in range(len(r.seq)):
@@ -66,7 +67,7 @@ def add_sequencing_error(r, error=0.01):
             else:
                 new.append(r.seq[i])
         # Returns a new UMIRead object. The species after amplification never changes
-        return (UMIRead(r.species, ''.join(new)))
+        return (UMIRead(r.gid, r.species, ''.join(new)))
 
 
 ## def output_summary(?):
@@ -79,7 +80,7 @@ def test4():
     c = 0
     n = 10000
     for i in range(n):
-        umi = UMIRead('ACGT')
+        umi = UMIRead("0", 'ACGT')
         new = sequencing_err(umi, 0.01)
         if new.seq != umi.seq:
             c += 1
@@ -90,7 +91,7 @@ def test4():
 def test1():
     ## PCR eff is 1, error rate is 1%
     print "PCR eff is 1, error rate is 1%"
-    umi = UMIRead('ACGT')
+    umi = UMIRead("0", 'ACGT')
     myerr = [0,] * len(umi.species)
     for i in range(10000):
         tmp = umi.amplify(prob=1, error=0.01)
@@ -109,7 +110,7 @@ def test2():
     ## test if the number of reads doubles
     print "PCR eff is 0.5, error rate is 1%"
     n = 10000
-    umi = UMIRead('ACGT')
+    umi = UMIRead("0", 'ACGT')
     myerr = [0,] * len(umi.species)
     for i in range(10000):
         tmp = umi.amplify(prob=0.5, error=0.01)
@@ -126,7 +127,7 @@ def test2():
 
     
 def test3():
-    print UMIRead("ATCG", "ATTT")
+    print UMIRead("0", "ATCG", "ATTT")
 
     
 def main():
@@ -159,7 +160,7 @@ def main():
     sequencing_error = args.sequencing_error
     for i in range(pool_size):
         tmp = ''.join(random.choice(('A', 'C', 'G', 'T')) for _ in range(k))
-        pool.append(UMIRead(tmp))
+        pool.append(UMIRead(0, tmp))
 
     for i in range(pcr_n):
         new_pool = []
