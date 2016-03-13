@@ -5,8 +5,11 @@ import sys
 import argparse
 from struct import unpack
 
+
 def print2(a):
     print >>sys.stderr, a
+
+
 class RunStats():
     """It records the info for one run
 """
@@ -170,7 +173,7 @@ nt has a quality score below qc, this function returns False
 
 # @profile
 def main():
-    parser = argparse.ArgumentParser(description='A script to reformat r1 reads in a UMI fastq file so that the name of each record contains the UMI',
+    parser = argparse.ArgumentParser(description='A script to reformat reads in a UMI fastq file so that the name of each record contains the UMI',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-l', '--left', help='the input fastq file for r1.', required=True)
     parser.add_argument('-r', '--right', help='the input fastq file for r2.', required=True)
