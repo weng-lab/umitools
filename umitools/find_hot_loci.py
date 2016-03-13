@@ -27,7 +27,7 @@ def get_reads_for_each_pos(fn):
     c = 0
     bam = pysam.AlignmentFile(fn, "rb")
     pos2read = {}
-    for read in bam.fetch(reference="chrM"):
+    for read in bam.fetch():
         c += 1
         if c % 100000 == 0:
             print >>sys.stderr, "Processed " + str(c) + " entries..."
@@ -43,16 +43,18 @@ def get_reads_for_each_pos(fn):
     return pos2read
 
 
-def output_bam(fn, pos2read):
+def output_bam(fn, pos2read, cutoff=100):
+    '''For those loci that generates lots of reads, this function returns
+    the corresponding records'''
     all_read_names = {}
     for i in pos2read:
-        for j in pos2read[i]:
-            all_read_names[j] = 0
-            
+        if len(pos2read[i]) >= cutoff:
+            for j in pos2read[i]:
+                all_read_names[j] = 0
     bam = pysam.AlignmentFile(fn, "rb")
-    out = pysam.AlignmentFile(fn + ".abundant_loci.bam", "wb", template=bam)
+    out = pysam.AlignmentFile(fn + ".hot_loci.bam", "wb", template=bam)
     c = 0
-    for read in bam.fetch(reference="chrM"):
+    for read in bam.fetch():
         c += 1
         if c % 100000 == 0:
             print >>sys.stderr, "Processed " + str(c) + " entries..."
@@ -80,32 +82,40 @@ def print_hist(pos2read):
 
             
 def main():
-    parser = argparse.ArgumentParser(description='A pair of FASTQ files \
-    are first reformatted using reformat_umi_fastq.py and then \
-    is aligned to get the bam file. This script can parse the umi \
-    barcode in the name of each read to mark duplicates.')
+    parser = argparse.ArgumentParser(description='This script can \
+    find those "hot" loci, i.e. those loci that produce a huge number \
+    of reads and then it outputs a histogram. Optionally, you can include \
+    -o option so that it also outputs the corresponding bam records')
     parser.add_argument('-f', '--file', help='the input bam file',
-                        required=False)
+                        required=True)
     parser.add_argument('-d', '--debug', help='turn on debug mode',
                         action="store_true")
-    parser.add_argument('-o', '--output-bam', help='output the bam file containing reads of interest',
+    parser.add_argument('-o', '--output-bam', help='output the bam file \
+    containing reads of interest. The default is to output the bam records \
+    with more than 100 reads',
                         action="store_true")
+    parser.add_argument('--output-bam-cutoff', help='output the bam file \
+    containing reads of interest. The default is to output the bam records \
+    with more than 100 reads', type=int,
+                        default=100)
+    
     args = parser.parse_args()
     fn = args.file
-    fn = "Zamore.RSQ.UMI.B6.brain.17dpp.fmt.x_rRNA.mm10g.sorted.bam"
-    output_bam = False
-    output_bam = args.output_bam
+    # fn = "Zamore.RSQ.UMI.B6.brain.17dpp.fmt.x_rRNA.mm10g.F400.sorted.bam"
+    output_bam_flag = False
+    output_bam_flag = args.output_bam
+    output_bam_cutoff = args.output_bam_cutoff
     bam_tmp = pysam.AlignmentFile(fn, "rb")
-
-
     if not bam_tmp.has_index():
         print >>sys.stderr, "Input file %s is being indexed." % fn
         pysam.index(fn)
     global DEBUG
     DEBUG = args.debug
     pos2read = get_reads_for_each_pos(fn)
-    if output_bam:
-        output_bam(fn, pos2read)
+    print >>sys.stderr, "The cutoff for hot loci: %d" % output_bam_cutoff
+    if output_bam_flag:
+        # output_bam(fn, pos2read, cutoff=output_bam_cutoff)
+        output_bam(fn, pos2read, cutoff=output_bam_cutoff)
     print_hist(pos2read)
 
 

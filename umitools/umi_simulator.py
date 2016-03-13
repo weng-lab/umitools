@@ -5,9 +5,11 @@ import string
 import sys
 import argparse
 
+
 def print2(a):
     print >>sys.stderr, a
 
+    
 class UMIRead:
     '''species represents the ground truth and seq represents the actual sequence
 which may or may not have mutations
@@ -43,6 +45,7 @@ which may or may not have mutations
             return (UMIRead(self.species, self.seq), )
     def __repr__(self):
         return "UMI: species %s seq %s" % (self.species, self.seq)
+
     
 def add_sequencing_error(r, error=0.01):
     '''Returns a new UMIRead object containing the sequencing error
@@ -65,6 +68,12 @@ def add_sequencing_error(r, error=0.01):
         # Returns a new UMIRead object. The species after amplification never changes
         return (UMIRead(r.species, ''.join(new)))
 
+
+## def output_summary(?):
+
+    
+    
+    
 def test4():
     print "Testing sequencing error (1%, which makes things obvious)"
     c = 0
@@ -76,6 +85,7 @@ def test4():
             c += 1
     print "Number of reads out ouf %d with errors: %d" % (n, c)
     print "It should be around 400"
+
     
 def test1():
     ## PCR eff is 1, error rate is 1%
@@ -93,6 +103,7 @@ def test1():
     for i in range(len(umi.species)):
         print str(i) + "\t" + str(myerr[i])
 
+        
 def test2():
     ## PCR eff is 0.5, error rate is 1%
     ## test if the number of reads doubles
@@ -113,8 +124,11 @@ def test2():
         print str(i) + "\t" + str(myerr[i])
     print "Number of reads in the end: %d" % n
 
+    
 def test3():
     print UMIRead("ATCG", "ATTT")
+
+    
 def main():
     # test1()
     # test2()
