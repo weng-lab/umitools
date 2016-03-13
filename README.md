@@ -7,8 +7,8 @@ A script to reformat reads in a UMI fastq file so that the name of each record c
 ### umi_mark_duplicates.py
 A pair of FASTQ files are first reformatted using reformat_umi_fastq.py and then is aligned to get the bam file. This script can parse the umi barcode in the name of each read to mark duplicates.
 
-find_hot_loci.py
+### find_hot_loci.py
+This script can find those "hot" loci, i.e. those loci that produce a huge number of reads and then it outputs a histogram. Optionally, you can include -o option so that it also outputs the corresponding bam records
 
-umi_loci_with_duplicates.py
-
-umi_simulator.py
+### umi_simulator.py
+A simple in silico PCR simulator for UMI reads
