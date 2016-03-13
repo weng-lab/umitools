@@ -5,7 +5,11 @@ import string
 import sys
 import argparse
 
-
+# This is where we define the exp level of each locus
+# for the sake of completeness, I also include a locus that has 0 expression
+LOCI_EXP = range(0, 100) + range(100, 1000, 10) + range(1000, 10000, 100) + range(10000, 21000, 1000)
+# LOCI_EXP = range(0, 100) + range(100, 1000, 10)
+    
 def print2(a):
     print >>sys.stderr, a
 
@@ -13,6 +17,9 @@ def print2(a):
 class UMIRead:
     '''species represents the ground truth and seq represents the actual sequence
 which may or may not have mutations
+gid is the true number of molecules initially. species is the true UMI
+initially. seq is the sequenced UMI, which may have errors caused by
+PCR or sequencing.
 '''
     def __init__(self, *args):
         self.gid = args[0]
@@ -129,18 +136,19 @@ def test2():
 def test3():
     print UMIRead("0", "ATCG", "ATTT")
 
-    
+
 def main():
     # test1()
     # test2()
 
 
-    parser = argparse.ArgumentParser(description='A simple in silico PCR simulator',
+    parser = argparse.ArgumentParser(description='A simple in silico PCR simulator. It creates an initial set of molecules with absolute numbers ranging from 1 to 100000), simulates PCR and sequencing and and outputs the stats',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-p', '--pcr-cycle', help='number of PCR cycles', required=True, type=int)
     parser.add_argument('-l', '--umi-length', help='length of UMI', required=True, type=int)
-    parser.add_argument('-s', '--pool-size', help='initial pool size', required=True, type=int)
-    parser.add_argument('-o', '--output-size', help='final pool size', required=True, type=int)
+    ## parser.add_argument('--loci', help='number of loci to simulate. They will have different number of reads: 1, 2, 3...', required=True, type=int)
+    ## parser.add_argument('-s', '--pool-size', help='initial pool size', required=True, type=int)
+    ## parser.add_argument('-o', '--output-size', help='final pool size', required=True, type=int)
     parser.add_argument('-a', '--amplification-rate', help='successful rate of PCR amplification', required=False, type=float, default=0.7)
     parser.add_argument('--pcr-error', help='error rate of PCR amplification', required=False, type=float, default=1e-4)
     parser.add_argument('--sequencing-error', help='error rate of sequencing', required=False, type=float, default=0.01)    
@@ -150,18 +158,24 @@ def main():
     # k = 4
     k = args.umi_length
     # pool_size = 100
-    pool_size = args.pool_size
+    # pool_size = args.pool_size
+    global LOCI_EXP
     # final_pool_size = 1000
-    final_pool_size = args.output_size
+    # final_pool_size = args.output_size
+    final_pool_size = 1000000
     # pcr_n = 10
     pcr_n = args.pcr_cycle
     success_rate = args.amplification_rate
     pcr_error = args.pcr_error
     sequencing_error = args.sequencing_error
-    for i in range(pool_size):
-        tmp = ''.join(random.choice(('A', 'C', 'G', 'T')) for _ in range(k))
-        pool.append(UMIRead(0, tmp))
-
+    # for i in range(pool_size):
+    #     tmp = ''.join(random.choice(('A', 'C', 'G', 'T')) for _ in range(k))
+    #     pool.append(UMIRead("0", tmp))
+    
+    for i in range(len(LOCI_EXP)):
+        for j in range(LOCI_EXP[i]):
+            tmp = ''.join(random.choice(('A', 'C', 'G', 'T')) for _ in range(k))
+            pool.append(UMIRead(LOCI_EXP[i], tmp))
     for i in range(pcr_n):
         new_pool = []
         for p in pool:
@@ -181,6 +195,21 @@ def main():
         r = add_sequencing_error(i, sequencing_error)
         final_pool.append(r)
     print2("Number of reads with error(s) after sequencing: %d" % n_err_reads(final_pool))
+
+    ## Print the stats of the original reads for each loci and final reads for each loci
+    loci_reads = {}
+    # print LOCI_EXP
+    for i in range(len(LOCI_EXP)):
+        loci_reads[LOCI_EXP[i]] = []
+    for p in final_pool:
+        loci_reads[p.gid].append(p)
+    print "%s\t%s\t%s" % ("initial_true_n_fragments", "final_n_reads", "final_n_umi")
+    for i in range(len(LOCI_EXP)):
+        j = loci_reads[LOCI_EXP[i]]
+        n_umi = len(set([jj.species for jj in j]))
+        n_reads = len(j)
+        print "%d\t%d\t%d" % (LOCI_EXP[i], n_reads, n_umi)
+
         
 def n_err_reads(p):
     n = 0
