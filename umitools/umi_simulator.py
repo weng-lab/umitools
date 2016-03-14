@@ -7,7 +7,7 @@ import argparse
 
 # This is where we define the exp level of each locus
 # for the sake of completeness, I also include a locus that has 0 expression
-LOCI_EXP = range(0, 200) + range(200, 1000, 100) + [1000, 3000, 5000, 10000, 30000, 50000, 100000]
+LOCI_EXP = range(0, 1000) * 20 + [1000, 3000, 5000, 10000, 30000, 50000, 100000]
 # LOCI_EXP = range(0, 100) + range(100, 1000, 10)
 # Limit the pool size: if after any PCR cycle, the pool is larger that this, then downsample the pool
 # This should be larger than final_pool_size
