@@ -7,9 +7,14 @@ import argparse
 
 # This is where we define the exp level of each locus
 # for the sake of completeness, I also include a locus that has 0 expression
-LOCI_EXP = range(0, 100) + range(100, 1000, 10) + range(1000, 10000, 100) + range(10000, 21000, 1000)
+LOCI_EXP = range(0, 200) + range(200, 1000, 100) + [1000, 3000, 5000, 10000, 30000, 50000, 100000]
 # LOCI_EXP = range(0, 100) + range(100, 1000, 10)
-    
+# Limit the pool size: if after any PCR cycle, the pool is larger that this, then downsample the pool
+# This should be larger than final_pool_size
+# MAX_POOL_SIZE = 10000000
+MAX_POOL_SIZE = 10000000
+
+
 def print2(a):
     print >>sys.stderr, a
 
@@ -171,7 +176,7 @@ def main():
     # for i in range(pool_size):
     #     tmp = ''.join(random.choice(('A', 'C', 'G', 'T')) for _ in range(k))
     #     pool.append(UMIRead("0", tmp))
-    
+    print2("Total number of molecules to start with %d" % sum(LOCI_EXP))
     for i in range(len(LOCI_EXP)):
         for j in range(LOCI_EXP[i]):
             tmp = ''.join(random.choice(('A', 'C', 'G', 'T')) for _ in range(k))
@@ -180,8 +185,12 @@ def main():
         new_pool = []
         for p in pool:
             new_pool.extend(p.amplify(success_rate, pcr_error))
-        print2("Done PCR cycle %d" % (i+1))
-        pool = new_pool
+        print2("Done PCR cycle %d." % (i+1))
+        print2("Current number of molecules %d." % (len(new_pool)))
+        if len(new_pool) <= MAX_POOL_SIZE:
+            pool = new_pool
+        else:
+            pool = random.sample(new_pool, MAX_POOL_SIZE)
     print2("Pool size after PCR: %d" % len(pool))
     pool2 = random.sample(pool, final_pool_size)
     print2("Number of reads to be sequenced: %d" % len(pool2))
