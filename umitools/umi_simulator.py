@@ -172,7 +172,7 @@ def main():
     global LOCI_EXP
     # final_pool_size = 1000
     # final_pool_size = args.output_size
-    final_pool_size = 1000000
+    final_pool_size = 10000000
     # pcr_n = 10
     pcr_n = args.pcr_cycle
     success_rate = args.amplification_rate
