@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+
+__author__ = "Yu Fu"
+__license__ = "GPLv3"
+
 import operator
 import gzip
 import sys

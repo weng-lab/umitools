@@ -2,6 +2,9 @@
 
 # Usage: python mark_duplicates_umi.py -f test.sorted.bam >test.dup_marked.bam 2>test.dup_marked.log
 
+__author__ = "Yu Fu"
+__license__ = "GPLv3"
+
 DEBUG = False
 # A FASTQ file is first processed by reformat_umi_fastq.py to put the
 # barcode info in the fasta header. Then it is aligned by aligner such as
