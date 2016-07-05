@@ -52,11 +52,11 @@ class RunStats():
         print2("-" * 80)
         print2("Reads w/ proper UMI:\t" + str(self["n_good_reads"]) )
         print2("-" * 80)
-    def umi_composition(self):
-        print2("UMI composition for good reads")
+    def umi_padding_usage(self):
+        print2("UMI padding usage for good reads")
         for i in self.stats["good_umi_locator"]:
             print2( i + " " + str(self.stats["good_umi_locator"][i]) )
-        print2("UMI compoistion for all reads")
+        print2("UMI padding usage for all reads")
         my_sorted = sorted(self.stats["all_umi_locator"].items(), key=operator.itemgetter(1), reverse=True)
         for i in my_sorted:
             print2( str(i[0]) + " " + str(i[1]) )
@@ -321,8 +321,8 @@ def main():
     if verbose:
         for i in ("r1", "r2"):
             print2("=" * 80)
-            print2(i + " UMI composition")
-            stats[i].umi_composition()
+            print2(i + " UMI padding usage")
+            stats[i].umi_padding_usage()
 
             print2("=" * 80)
             print2(i + " padding usage")
