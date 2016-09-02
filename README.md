@@ -1,6 +1,10 @@
-# umitools
+# Description
 A toolset for handling sequencing data with unique molecular identifiers (UMIs)
 
+# Installation
+`pip install pyfaidx  # add --user if you want to install it to your own directory`
+
+# Usage
 ### reformat_umi_fastq.py
 A script to reformat reads in a UMI fastq file so that the name of each record contains the UMI
 
