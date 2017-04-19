@@ -139,7 +139,7 @@ def mark_duplicates_worker(chromosome):
 def merge_bam(infile, refs):
     if infile.endswith(".bam"):
         prefix = infile[:-4]
-    if prefix.endswith(".sorted"):
+    if infile.endswith(".sorted"):
         prefix = prefix[:-7]
     # Open the input file to get the header template
     tmp = ps.AlignmentFile(infile, "rb")
