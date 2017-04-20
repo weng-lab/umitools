@@ -21,7 +21,6 @@ class UMIInfo:
     def __str__(this):
         t = []
         t.append("5' UMI pattern: %s" % (",".join(this.pat5)))
-        print this.pat5
         t.append("3' UMI pattern: %s" % (",".join(this.pat3)))
         return "\n".join(t)
 
