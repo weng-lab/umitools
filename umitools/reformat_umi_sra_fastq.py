@@ -97,6 +97,8 @@ class SraRunStats():
     def __init__(self):
         self.stats = {}
         self.stats["n_with_proper_umi"] = 0
+        self.stats["n_non_duplicate"] = 0
+        self.stats["n_duplpicate"] = 0        
         self.stats["n_without_proper_umi"] = 0
 
     def __getitem__(self, key):
@@ -186,7 +188,12 @@ def main():
                         help='the output fastq file', required=True)
     parser.add_argument('-d', '--pcr-duplicate',
                         help='the output fastq file containing PCR duplicates',
-                        required=True)
+                        required=True) 
+    parser.add_argument('--reads-with-improper-umi', default="",
+                        help='the output fastq file containing reads with improper UMIs. \
+                        The default is to throw away these reads. This is for debugging purposes',
+                        required=False)
+   
     parser.add_argument('-v', '--verbose',
                         help='Also include detailed run info',
                         action="store_true")
@@ -236,7 +243,10 @@ def main():
     print >>sys.stderr, "-" * 72
         
     out = open(args.output, "w")
-
+    dup = open(args.pcr_duplicate, "w")
+    if len(args.reads_with_improper_umi) != 0:
+        imp = open(args.reads_with_improper_umi, "w")
+        print args.reads_with_improper_umi
     n_drop_due_to_low_quality = 0
     # n_proper = 0
 
@@ -246,6 +256,9 @@ def main():
         print >>sys.stderr, "Input is gzipped."
     else:
         f = open(fn)
+
+    ## Small RNA insert and umi should be unique; otherwise, it is a duplicate
+    insert_umi = {}
     while True:
         c += 1
         if c%4==1:
@@ -262,23 +275,43 @@ def main():
             r_name_proc, r_seq_proc, r_info_proc, r_qual_proc, r_bc = process_sra_read(r, stats, ui)
             if r_name_proc == "":
                 stats["n_without_proper_umi"] += 1
+                if len(args.reads_with_improper_umi) != 0:
+                    print >>imp, r_name
+                    print >>imp, r_seq
+                    print >>imp, r_info
+                    print >>imp, r_qual
             else:
                 r_name_proc = get_header_with_umi(r_name_proc, r_bc)
                 stats["n_with_proper_umi"] += 1
-                
-                print >>out, r_name_proc
-                print >>out, r_seq_proc
-                print >>out, r_info_proc
-                print >>out, r_qual_proc
+                k = r_seq + "_" + r_bc
+                # print k
+                if k in insert_umi:
+                    stats["n_duplpicate"] += 1
+                    print >>dup, r_name_proc
+                    print >>dup, r_seq_proc
+                    print >>dup, r_info_proc
+                    print >>dup, r_qual_proc
+                else:
+                    stats["n_non_duplicate"] += 1
+                    insert_umi[k] = True
+                    print >>out, r_name_proc
+                    print >>out, r_seq_proc
+                    print >>out, r_info_proc
+                    print >>out, r_qual_proc
 
-    f.close()
+    out.close()
+    dup.close()
+    if len(args.reads_with_improper_umi) != 0:
+        imp.close()
     print >>sys.stderr, ""
     print >>sys.stderr, "Stats: "
     # stats.summary()
         
     print >>sys.stderr, ""
     print >>sys.stderr, "Reads dropped due to improper UMI:\t" + str(stats["n_without_proper_umi"])
-    print >>sys.stderr, "Final proper read pairs:\t" + str(stats["n_with_proper_umi"])
+    print >>sys.stderr, "Final proper read:\t" + str(stats["n_with_proper_umi"])
+    print >>sys.stderr, "\tReads that are duplicates:\t" + str(stats["n_duplpicate"])
+    print >>sys.stderr, "\tReads that are non-duplicates:\t" + str(stats["n_non_duplicate"])
         
     print2("")
     if verbose:
