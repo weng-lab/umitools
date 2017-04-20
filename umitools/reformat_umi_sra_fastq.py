@@ -13,82 +13,88 @@ def print2(a):
     print >>sys.stderr, a
 
 class UMIInfo:
-    def transform_umi_to_pos(this, umi_pat):
-        '''Transform the UMI pattern into the positions of N's and positions of 
-non-N's, which makes the UMI pattern searching faster
-'''
-        a = zip(range(0, len(umi_pat)), list(umi_pat))
-        ret_pos_n = [i[0] for i in a if i[1] == "N"]
-        ret_pos_fixed = [i[0] for i in a if i[1] != "N"]
-        ret_base_fixed = [i[1] for i in a if i[1] != "N"]
-        return (ret_pos_n, ret_pos_fixed, ret_base_fixed)
-
     def __init__(this, umi_pat5, umi_pat3):
+        # Note that both should be lists so that it allows the two or more 5' UMI patterns
         this.pat5 = umi_pat5
         this.pat3 = umi_pat3
-        this.pos_n5, this.pos_fixed5, this.base_fixed5 = this.transform_umi_to_pos(umi_pat5)
-        this.pos_n3, this.pos_fixed3, this.base_fixed3 = this.transform_umi_to_pos(umi_pat3)            
 
     def __str__(this):
         t = []
-        t.append("5' UMI pattern: %s" % (this.pat5))
-        t.append("Positions of variable nt:")
-        t.append(",".join([str(i) for i in this.pos_n5]))
-        t.append("Postions of fixed nt:")
-        t.append(",".join([str(i) for i in this.pos_fixed5]))
-        t.append("Fixed nt:")
-        t.append(",".join([str(i) for i in this.base_fixed5]))
-        t.append("")
-        t.append("3' UMI pattern: %s" % (this.pat3))
-        t.append("Positions of variable nt:")
-        t.append("this.pos_n3")
-        t.append("Postions of fixed nt:")
-        t.append(",".join([str(i) for i in this.pos_fixed3]))
-        t.append("Fixed nt:")
-        t.append(",".join([str(i) for i in this.base_fixed3]))
+        t.append("5' UMI pattern: %s" % (",".join(this.pat5)))
+        print this.pat5
+        t.append("3' UMI pattern: %s" % (",".join(this.pat3)))
         return "\n".join(t)
 
-    def n_mismatch(this, r):
-        '''This function returns of the numbers of mismatches in the fixed portion of
-5' UMI and 3' UMI'''
-        a = [r[i] for i in this.pos_fixed5]
-        b = this.base_fixed5
-        assert len(a) == len(b)
-        ret5 = 0
-        for i in range(len(a)):
-            if a[i] != b[i]:
-                ret5 += 1
+    def check_umi_pat5_one(this, pat, r):
+        '''it checks the reads against one 5' UMI pattern and returns
+        the number of mismatches in fixed portion of the UMI and the
+        nt in the variable portion of the read
+'''
+        bc = []
+        mm = 0
+        assert len(r) > len(pat), "Read is shorter than 5' UMI pattern: %s" % (r, )
+        for i in range(len(pat)):
+            if pat[i] == "N":
+                bc.append(r[i])
+            else:
+                if r[i] != pat[i]:
+                    mm += 1
+        return [mm, "".join(bc)]
 
-        ret3 = 0
-        offset = len(r) - len(this.pat3)
-        a = [r[i+offset] for i in this.pos_fixed3]
-        b = this.base_fixed3
-        assert len(a) == len(b)
-        for i in range(len(a)):
-            if a[i] != b[i]:
-                ret3 += 1
-        return (ret5, ret3)
+    def check_umi_pat3_one(this, pat, r):
+        '''it checks the reads against one 3' UMI pattern and returns
+        the number of mismatches in fixed portion of the UMI and the
+        nt in the variable portion of the read
+'''
+        bc = []
+        mm = 0
+        offset = len(r) - len(pat)
+        assert len(r) > len(pat), "Read is shorter than 3' UMI pattern: %s" % (r, )
+        for i in range(len(pat)):
+            if pat[i] == "N":
+                bc.append(r[i+offset])
+            else:
+                if r[i+offset] != pat[i]:
+                    mm += 1
+        return [mm, "".join(bc)]
 
-    def extract_umi(this, r):
-        '''This function extracts UMI info. In other words, this function extracts
-        bases of reads that correspond to the N part of the UMI pattern
+    def check(this, r):
+        '''This function returns the total number of mismatches at 5' and
+        3' end UMIs, together with the barcode (the variable portion of
+        the UMI)
         '''
-        offset = len(r) - len(this.pat3)
-        p1 = "".join([r[i] for i in this.pos_n3])
-        p2 = "".join([r[i+offset] for i in this.pos_n3])
-        return p1 + p2
+        mm5 = 100
+        bc5 = ""
+        for p in this.pat5:
+            tmp_mm5, tmp_bc5 = this.check_umi_pat5_one(p, r)
+            if tmp_mm5 < mm5:
+                mm5 = tmp_mm5
+                bc5 = tmp_bc5
 
+        mm3 = 100
+        bc3 = ""
+        for p in this.pat3:
+            tmp_mm3, tmp_bc3 = this.check_umi_pat3_one(p, r)
+            if tmp_mm3 < mm3:
+                mm3 = tmp_mm3
+                bc3 = tmp_bc3
+
+        # print "5' UMI mismatch %d, barcode %s" % (mm5, bc5)
+        # print "3' UMI mismatch %d, barcode %s" % (mm3, bc3)
+        return [mm5 + mm3, bc5 + bc3]
+        
     def extract_insert(this, r):
         '''This function returns the insert part of reads. In other words, this 
-        function extracts the actual small RNAs
+        function extracts the actual small RNAs. It assumes all possible 5' UMI
+        has the same lengths and all possible 3' UMIs have the same lengths
         '''
-        return r[len(this.pat5): len(r) - len(this.pat3)]
+        return r[len(this.pat5[0]): len(r) - len(this.pat3[0])]
 
     def extract_insert_qual(this, r_qual):
         '''This function returns the qualities of the small RNA bases. It should be 
         used together with extrat_insert()
         '''
-        return r_qual[len(this.pat5): len(r_qual) - len(this.pat3)]
+        return r_qual[len(this.pat5[0]): len(r_qual) - len(this.pat3[0])]
 
 
 class SraRunStats():
@@ -100,6 +106,7 @@ class SraRunStats():
         self.stats["n_non_duplicate"] = 0
         self.stats["n_duplpicate"] = 0        
         self.stats["n_without_proper_umi"] = 0
+        self.stats["n_read"] = 0        
 
     def __getitem__(self, key):
         return self.stats[key]
@@ -127,8 +134,6 @@ def is_gzipped(filename):
         s = unpack('cccc', handle.read(4))
         return s == magic
 
-
-# @profile
 def process_sra_read(read, stats, ui):
     """This function processes one small RNA-seq read. Small RNA-seq
 reads are always single end. Returns 4 empty strings if the read is dropped.
@@ -144,16 +149,17 @@ UMI information is passed to this function via the parameter ui
     r_info = read.r_info
     r_qual = read.r_qual
     mate = read.mate
-    
-    n_mm5, n_mm3 = ui.n_mismatch(r_seq)
-    if n_mm5 + n_mm3 <= N_MISMATCH_ALLOWED_IN_UMI:
-        ret_bc = ui.extract_umi(r_seq)
+
+    # print r_seq
+    mm, bc = ui.check(r_seq)
+    # print "---"
+
+    if mm <= N_MISMATCH_ALLOWED_IN_UMI:
+        ret_bc = bc
         ret_name = r_name
         ret_seq = ui.extract_insert(r_seq)
         ret_info = r_info
         ret_qual = ui.extract_insert_qual(r_qual)
-        # print ret_seq
-        # print ret_bc        
     return ret_name, ret_seq, ret_info, ret_qual, ret_bc
 
     
@@ -198,13 +204,11 @@ def main():
                         help='Also include detailed run info',
                         action="store_true")
     parser.add_argument('-5', '--umi-pattern-5',
-                        help='Set the UMI pattern at the 5\' end',
-                        default='NNNCGANNNTACNNN')
+                        help='Set the UMI pattern at the 5\' end. Use ACGT for fixed nt and N for variable nt in UMI. If there are multiple patterns, separate them using comma',
+                        default='NNNCGANNNTACNNN,NNNAUCNNNAGTNNN')
     parser.add_argument('-3', '--umi-pattern-3',
-                        help='Set the UMI pattern at the 3\' end',
+                        help='Set the UMI pattern at the 3\' end. Use ACGT for fixed nt and N for variable nt in UMI. If there are multiple patterns, separate them using comma',
                         default='NNNGTCNNNTAGNNN')
-    # parser.add_argument('-D', '--debug',
-    #                     help='Turn on debugging mode', action="store_true")
     # Quality cutoff is not necessary as the tools for trimming 3' small RNA-seq adapters
     # already do this
     # 
@@ -214,25 +218,15 @@ def main():
     #                     program assumes the phred quality scores in the fastq \
     #                     file are using sanger format',
     #                     required=False, type=int, default=13)
-    # global DEBUG
-    global qc
-    global c # Read count
     global N_MISMATCH_ALLOWED_IN_UMI
     N_MISMATCH_ALLOWED_IN_UMI = 1
     c = 0
     args = parser.parse_args()
-    # DEBUG = args.debug
-    # if DEBUG:
-    #     print >>sys.stderr, "Debugging mode is on"
-    # Quality cutoff (This is not used for now as 3' adapter removal has already
-    # taken care of this
-    # qc = chr(args.quality + 33)
-    # print >>sys.stderr, "Quality cutoff in ASCII: " + qc
     
     fn = args.input
     verbose = args.verbose
-    umi_pat5 = args.umi_pattern_5
-    umi_pat3 = args.umi_pattern_3
+    umi_pat5 = args.umi_pattern_5.split(",")
+    umi_pat3 = args.umi_pattern_3.split(",")
 
     ui = UMIInfo(umi_pat5, umi_pat3)
 
@@ -246,9 +240,6 @@ def main():
     dup = open(args.pcr_duplicate, "w")
     if len(args.reads_with_improper_umi) != 0:
         imp = open(args.reads_with_improper_umi, "w")
-        print args.reads_with_improper_umi
-    n_drop_due_to_low_quality = 0
-    # n_proper = 0
 
     stats = SraRunStats()
     if is_gzipped(fn):
@@ -305,9 +296,8 @@ def main():
         imp.close()
     print >>sys.stderr, ""
     print >>sys.stderr, "Stats: "
-    # stats.summary()
-        
     print >>sys.stderr, ""
+    print >>sys.stderr, "Total input reads:\t" + str(c/4)
     print >>sys.stderr, "Reads dropped due to improper UMI:\t" + str(stats["n_without_proper_umi"])
     print >>sys.stderr, "Final proper read:\t" + str(stats["n_with_proper_umi"])
     print >>sys.stderr, "\tReads that are duplicates:\t" + str(stats["n_duplpicate"])
