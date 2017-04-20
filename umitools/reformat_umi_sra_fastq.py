@@ -295,7 +295,6 @@ def main():
         imp.close()
     print >>sys.stderr, ""
     print >>sys.stderr, "Stats: "
-    print >>sys.stderr, ""
     print >>sys.stderr, "Total input reads:\t" + str(c/4)
     print >>sys.stderr, "Reads dropped due to improper UMI:\t" + str(stats["n_without_proper_umi"])
     print >>sys.stderr, "Final proper read:\t" + str(stats["n_with_proper_umi"])
