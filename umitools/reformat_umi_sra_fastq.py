@@ -204,7 +204,7 @@ def main():
                         action="store_true")
     parser.add_argument('-5', '--umi-pattern-5',
                         help='Set the UMI pattern at the 5\' end. Use ACGT for fixed nt and N for variable nt in UMI. If there are multiple patterns, separate them using comma',
-                        default='NNNCGANNNTACNNN,NNNAUCNNNAGTNNN')
+                        default='NNNCGANNNTACNNN,NNNATCNNNAGTNNN')
     parser.add_argument('-3', '--umi-pattern-3',
                         help='Set the UMI pattern at the 3\' end. Use ACGT for fixed nt and N for variable nt in UMI. If there are multiple patterns, separate them using comma',
                         default='NNNGTCNNNTAGNNN')
