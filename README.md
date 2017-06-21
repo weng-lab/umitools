@@ -11,7 +11,9 @@ If you would like to modify it, simply grab the version on GitHub:
 # How to process UMI small RNA-seq data
 1. To process a fastq (`raw.fq.gz`) file from your UMI small RNA-seq data, you can first remove the 3' end small RNA-seq adapter. In this example, I use fastx_clipper from the FASTX-Toolkit and the adapter sequence is `TGGAATTCTCGGGTGCCAAGG`:
 
-`zcat raw.fq.gz | fastx_clipper -a TGGAATTCTCGGGTGCCAAGG -l 21 -c -Q33 2> raw.clipped.log | gzip -c - > clipped.fq.gz`
+`zcat raw.fq.gz | fastx_clipper -a TGGAATTCTCGGGTGCCAAGG -l 48 -c -Q33 2> raw.clipped.log | gzip -c - > clipped.fq.gz`
+
+`-l 48` specified the minimum length of the reads after the adapter removal. I use 48 since I want to make sure all reads are at least 18 nt (18 nt + 15 nt in the 5' UMI + 15 nt in the 3' UMI).
 
 2. To identify UMIs, you can run
 
