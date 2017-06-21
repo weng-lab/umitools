@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
-__author__ = "Yu Fu"
-__license__ = "GPLv3"
-
 import operator
 import gzip
 import sys
 import argparse
+import re
 from struct import unpack
+
+__author__ = "Yu Fu"
+__license__ = "GPLv3"
 
 
 def print2(a):
@@ -36,10 +37,13 @@ class RunStats():
         self.stats["padding"] = {"A": 0, "C": 0, "G": 0, "T": 0, "N": 0}
         # For ligation bias
         self.stats["ligation"] = {"A": 0, "C": 0, "G": 0, "T": 0, "N": 0}
+        
     def __getitem__(self, key):
         return self.stats[key]
+    
     def __setitem__(self, key, value):
         self.stats[key] = value
+        
     def summary(self):
         print2("-" * 80)
         print2("Total:\t" + str((c-1)/4) )
@@ -52,6 +56,7 @@ class RunStats():
         print2("-" * 80)
         print2("Reads w/ proper UMI:\t" + str(self["n_good_reads"]) )
         print2("-" * 80)
+        
     def umi_padding_usage(self):
         print2("UMI padding usage for good reads")
         for i in self.stats["good_umi_locator"]:
@@ -60,17 +65,20 @@ class RunStats():
         my_sorted = sorted(self.stats["all_umi_locator"].items(), key=operator.itemgetter(1), reverse=True)
         for i in my_sorted:
             print2( str(i[0]) + " " + str(i[1]) )
+            
     def padding_usage(self):
         for i in sorted(self.stats["padding"]):
             print2(i + "\t" + str(self.stats["padding"][i]))
+            
     def ligation_bias(self):
         for i in sorted(self.stats["ligation"]):
             print2(i + "\t" + str(self.stats["ligation"][i]))
         
         
 class Read():
-    """ Informtion for one read including r_name, r_seq, r_info, r_qual, mate and so on...
-"""
+    """ Informtion for one read including r_name, r_seq, r_info, r_qual, mate
+    and so on...
+    """
     def __init__(self, r_name, r_seq, r_info, r_qual, mate):
         self.r_name = r_name
         self.r_seq = r_seq
@@ -80,17 +88,22 @@ class Read():
         self.my_umi_locator = r_seq[umi_len : umi_len + umi_locator_len]
         self.my_umi = my_umi = r_seq[0:umi_len]
         self.my_umi_qual = r_qual[0:umi_len]
+
+
 def is_gzipped(filename):
     # 1F 8B 08 00 / gz magic number
     magic = ('\x1f', '\x8b', '\x08', '\x00')
 
     with open(filename, 'rb') as handle:
         s = unpack('cccc', handle.read(4))
-        return s==magic
+        return s == magic
+
+
 # @profile
 def process_read(read, stats):
-    """This function processes one read. The "mate" option can be "r1" or "r2". Returns 4 empty strings if the read is dropped
-"""
+    """This function processes one read. The "mate" option can be "r1" or "r2".
+    Returns 4 empty strings if the read is dropped
+    """
     ret_name = ""
     ret_seq = ""
     ret_info = ""
@@ -101,16 +114,16 @@ def process_read(read, stats):
     r_info = read.r_info
     r_qual = read.r_qual
     mate = read.mate
-    if DEBUG == True:
+    if DEBUG:
         print '-' * 80
         print mate
         print r_name
         print "Original qual:\t" + r_qual
         print "Original read:\t" + r_seq
-        print "Locator:\t" + ' ' * 5 + r_seq[umi_len : umi_len + umi_locator_len]
+        print "Locator:\t" + ' ' * 5 + r_seq[umi_len: umi_len + umi_locator_len]
         print "UMI:\t\t" + r_seq[0: umi_len]
         print "What's left:\t" + ' ' * 9 + r_seq[umi_len + umi_locator_len + umi_downstream_len: ]
-    my_umi_locator = read.my_umi_locator # r_seq[umi_len : umi_len + umi_locator_len]
+    my_umi_locator = read.my_umi_locator # r_seq[umi_len: umi_len + umi_locator_len]
     my_umi = read.my_umi # r_seq[0:umi_len]
     if my_umi_locator in stats[mate]["all_umi_locator"]:
         stats[mate]["all_umi_locator"][my_umi_locator] += 1
@@ -179,30 +192,39 @@ nt has a quality score below qc, this function returns False
 def main():
     parser = argparse.ArgumentParser(description='A script to reformat reads in a UMI fastq file so that the name of each record contains the UMI',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-l', '--left', help='the input fastq file for r1.', required=True)
-    parser.add_argument('-r', '--right', help='the input fastq file for r2.', required=True)
-    parser.add_argument('-L', '--left-out', help='the output fastq file for r1', required=True)
-    parser.add_argument('-R', '--right-out', help='the output fastq file for r2', required=True)
-    parser.add_argument('-v', '--verbose', help='Also include detailed stats for UMI and padding usage', action="store_true")
+    parser.add_argument('-l', '--left', help='the input fastq file for r1.',
+                        required=True)
+    parser.add_argument('-r', '--right', help='the input fastq file for r2.',
+                        required=True)
+    parser.add_argument('-L', '--left-out',
+                        help='the output fastq file for r1',
+                        required=True)
+    parser.add_argument('-R', '--right-out',
+                        help='the output fastq file for r2',
+                        required=True)
+    parser.add_argument('-v', '--verbose', help='Also include detailed stats for \
+    UMI and padding usage', action="store_true")
     parser.add_argument('--umi-locator',
-                        help='Set the UMI locators. If you have multiple, separate them by comma. e.g. GGG,TCA,ATC',
+                        help='''Set the UMI locators. If you have multiple, separate
+                        them by comma. e.g. GGG,TCA,ATC''',
                         default='GGG,TCA,ATC')
     parser.add_argument('--umi-padding',
-                        help='Set the nucleotide (for preventing ligation bias) after the UMI locators. \
-                        If you have multiple, separate them by comma. e.g. A,C,G,T. The quality for this nt is \
-                        sometimes low, so the default is all possible four nucleotides', default='A,C,G,T,N')
+                        help='''Set the nucleotide (for preventing ligation bias) 
+                        after the UMI locators. If you have multiple, separate
+                        them by comma. e.g. A,C,G,T. The quality for this nt is
+                        sometimes low, so the default is all possible four 
+                        nucleotides''', default='A,C,G,T,N')
     parser.add_argument('-q', '--quality',
-                        help='Quality (phred quality score) cutoff for UMI. Default is 13, \
-                        that is UMI with qualities >= 13 will be kept. This program assumes \
-                        the phred quality scores in the fastq file are using sanger format',
+                        help='''Quality (phred quality score) cutoff for UMI.
+                        Default is 13, that is UMI with qualities >= 13 will
+                        be kept. This program assumes the phred quality scores
+                        in the fastq file are using sanger format''',
                         required=False, type=int, default=13)
-    parser.add_argument('-D', '--debug', help='Turn on debugging mode', action="store_true")
+    parser.add_argument('-D', '--debug', help='Turn on debugging mode',
+                        action="store_true")
 
-    # Sanger format can encode a Phred quality score from 0 to 93 using ASCII 33 to 126 (although in raw read data
-    # the Phred quality score rarely exceeds 60, higher scores are possible in assemblies or read maps). Also used
-    # in SAM format.[4] Coming to the end of February 2011, Illumina's newest version (1.8) of their pipeline CASAVA
-    # will directly produce fastq in Sanger format, according to the announcement on seqanswers.com forum.[5]
-    # These variables do not change during one run. They are assgined values once in the main() function
+    # For details on Sanger format for phred scores, check out
+    # https://en.wikipedia.org/wiki/FASTQ_format
     global DEBUG
     global qc
     global umi_len
@@ -210,7 +232,7 @@ def main():
     global umi_locator_len
     global umi_downstream
     global umi_downstream_len
-    global c                              # Read count
+    global c                          # Read count
     c = 0
     args = parser.parse_args()
     DEBUG = args.debug
@@ -222,8 +244,14 @@ def main():
     fn1 = args.left
     fn2 = args.right
     verbose = args.verbose
-    out1 = open(args.left_out, "w")
-    out2 = open(args.right_out, "w")
+    if re.search("\.gz|\.gzip", args.left_out):
+        out1 = gzip.open(args.left_out, "wb", compresslevel=4)
+    else:
+        out1 = open(args.left_out, "w")
+    if re.search("\.gz|\.gzip", args.right_out):
+        out2 = gzip.open(args.right_out, "wb", compresslevel=4)
+    else:
+        out2 = open(args.right_out, "w")
 
     umi_len = 5
     umi_locators = {}

@@ -248,17 +248,17 @@ def main():
     print >>sys.stderr, "-" * 72
 
     if re.search("\.gz|\.gzip", args.output):
-        out = gzip.open(args.output, "wb")
+        out = gzip.open(args.output, "wb", compresslevel=4)
     else:
         out = open(args.output, "w")
     if re.search("\.gz|\.gzip", args.pcr_duplicate):
-        dup = gzip.open(args.pcr_duplicate, "wb")
+        dup = gzip.open(args.pcr_duplicate, "wb", compresslevel=4)
     else:
         dup = open(args.pcr_duplicate, "w")
         
     if len(args.reads_with_improper_umi) != 0:
         if re.search("\.gz|\.gzip", args.reads_with_improper_umi):
-            imp = open(args.reads_with_improper_umi, "wb")
+            imp = open(args.reads_with_improper_umi, "wb", compresslevel=4)
         else:
             imp = open(args.reads_with_improper_umi, "w")
 
