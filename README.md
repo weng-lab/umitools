@@ -21,6 +21,9 @@ Not sure if your libraries have high-quality UMIs at proper positions? Run the f
 
 `reformat_umi_sra_fastq.py -i clipped.fq.gz -o sra.umi.fq -d sra.dup.fq --reads-with-improper-umi sra.improper_umi.fq`
 
+# How to process UMI RNA-seq data
+TODO
+
 # Scripts for UMI RNA-seq
 ### reformat_umi_fastq.py
 A script to reformat reads in a UMI fastq file so that the name of each record contains the UMI.
