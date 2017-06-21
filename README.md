@@ -16,3 +16,16 @@ This script can find those "hot" loci, i.e. those loci that produce a huge numbe
 
 ### umi_simulator.py
 A simple in silico PCR simulator for UMI reads
+
+# How to process UMI small RNA-seq data
+To process a fastq (`raw.fq.gz`) file from your UMI small RNA-seq data, you can first remove the 3' end small RNA-seq adapter. In this example, I use fastx_clipper from the FASTX-Toolkit and the adapter sequence is `TGGAATTCTCGGGTGCCAAGG`:
+
+`zcat raw.fq.gz | fastx_clipper -a TGGAATTCTCGGGTGCCAAGG -l 21 -c -Q33 2> raw.clipped.log | gzip -c - > clipped.fq.gz`
+
+To identify UMIs, you can run
+
+`reformat_umi_sra_fastq.py -i clipped.fq.gz -o sra.umi.fq -d sra.dup.fq`
+
+Not sure if your libraries have high-quality UMIs at proper positions? Run the following to see which reads have improper UMIs.
+
+`reformat_umi_sra_fastq.py -i clipped.fq.gz -o sra.umi.fq -d sra.dup.fq --reads-with-improper-umi sra.improper_umi.fq`
