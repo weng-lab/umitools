@@ -4,6 +4,7 @@ import gzip
 import sys
 import argparse
 from struct import unpack
+import re
 
 __author__ = "Yu Fu"
 __license__ = "GPLv3"
@@ -12,9 +13,11 @@ __license__ = "GPLv3"
 def print2(a):
     print >>sys.stderr, a
 
+    
 class UMIInfo:
     def __init__(this, umi_pat5, umi_pat3):
-        # Note that both should be lists so that it allows the two or more 5' UMI patterns
+        '''Note that both should be lists so that it allows
+        the two or more 5' UMI patterns'''
         this.pat5 = umi_pat5
         this.pat3 = umi_pat3
 
@@ -25,7 +28,7 @@ class UMIInfo:
         return "\n".join(t)
 
     def check_umi_pat5_one(this, pat, r):
-        '''it checks the reads against one 5' UMI pattern and returns
+        '''it checks one read against one 5' UMI pattern and returns
         the number of mismatches in fixed portion of the UMI and the
         nt in the variable portion of the read
 '''
@@ -41,7 +44,7 @@ class UMIInfo:
         return [mm, "".join(bc)]
 
     def check_umi_pat3_one(this, pat, r):
-        '''it checks the reads against one 3' UMI pattern and returns
+        '''it checks one read against one 3' UMI pattern and returns
         the number of mismatches in fixed portion of the UMI and the
         nt in the variable portion of the read
 '''
@@ -83,7 +86,7 @@ class UMIInfo:
         return [mm5 + mm3, bc5 + bc3]
         
     def extract_insert(this, r):
-        '''This function returns the insert part of reads. In other words, this 
+        '''This function returns the insert part of reads. In other words, this
         function extracts the actual small RNAs. It assumes all possible 5' UMI
         has the same lengths and all possible 3' UMIs have the same lengths
         '''
@@ -103,12 +106,13 @@ class SraRunStats():
         self.stats = {}
         self.stats["n_with_proper_umi"] = 0
         self.stats["n_non_duplicate"] = 0
-        self.stats["n_duplpicate"] = 0        
+        self.stats["n_duplpicate"] = 0
         self.stats["n_without_proper_umi"] = 0
-        self.stats["n_read"] = 0        
+        self.stats["n_read"] = 0
 
     def __getitem__(self, key):
         return self.stats[key]
+    
     def __setitem__(self, key, value):
         self.stats[key] = value
 
@@ -133,6 +137,7 @@ def is_gzipped(filename):
         s = unpack('cccc', handle.read(4))
         return s == magic
 
+    
 def process_sra_read(read, stats, ui):
     """This function processes one small RNA-seq read. Small RNA-seq
 reads are always single end. Returns 4 empty strings if the read is dropped.
@@ -147,7 +152,7 @@ UMI information is passed to this function via the parameter ui
     r_seq = read.r_seq
     r_info = read.r_info
     r_qual = read.r_qual
-    mate = read.mate
+    # mate = read.mate
 
     # print r_seq
     mm, bc = ui.check(r_seq)
@@ -163,15 +168,15 @@ UMI information is passed to this function via the parameter ui
 
     
 def get_header_with_umi(header, umi):
-    """This function inserts a UMI after the '@' symbol, making the downstream 
+    """This function inserts a UMI after the '@' symbol, making the downstream
     analysis easier
     """
-    col=header.split(" ")
+    col = header.split(" ")
     return col[0] + "_" + umi + " " + col[1]
 
 
 def is_good_phred(phred, qc):
-    """Check if all the qualities are above qc, that is, if one 
+    """Check if all the qualities are above qc, that is, if one
     nt has a quality score below qc, this function returns False
     """
     ret = True
@@ -184,11 +189,12 @@ def is_good_phred(phred, qc):
 
 # @profile
 def main():
-    desc = "A script to identify reads in a UMI small RNA-seq fastq file"
+    desc = "A script to process reads in from UMI small RNA-seq. This script can handle \
+    gzipped files transparently."
     parser = argparse.ArgumentParser(description=desc,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-i', '--input',
-                        help='the input fastq file', required=True)
+                        help='the input fastq file.', required=True)
     parser.add_argument('-o', '--output',
                         help='the output fastq file', required=True)
     parser.add_argument('-d', '--pcr-duplicate',
@@ -196,21 +202,27 @@ def main():
                         required=True) 
     parser.add_argument('--reads-with-improper-umi', default="",
                         help='the output fastq file containing reads with improper UMIs. \
-                        The default is to throw away these reads. This is for debugging purposes',
+                        The default is to throw away these reads. This is for \
+                        debugging purposes',
                         required=False)
    
     parser.add_argument('-v', '--verbose',
                         help='Also include detailed run info',
                         action="store_true")
+
     parser.add_argument('-5', '--umi-pattern-5',
-                        help='Set the UMI pattern at the 5\' end. Use ACGT for fixed nt and N for variable nt in UMI. If there are multiple patterns, separate them using comma',
+                        help='''Set the UMI pattern at the 5\' end. Use ACGT for
+                        fixed nt and N for variable nt in UMI. If there are
+                        multiple patterns, separate them using comma''',
                         default='NNNCGANNNTACNNN,NNNATCNNNAGTNNN')
+    
     parser.add_argument('-3', '--umi-pattern-3',
-                        help='Set the UMI pattern at the 3\' end. Use ACGT for fixed nt and N for variable nt in UMI. If there are multiple patterns, separate them using comma',
+                        help='''Set the UMI pattern at the 3\' end. Use ACGT for
+                        fixed nt and N for variable nt in UMI. If there are
+                        multiple patterns, separate them using comma''',
                         default='NNNGTCNNNTAGNNN')
     # Quality cutoff is not necessary as the tools for trimming 3' small RNA-seq adapters
     # already do this
-    # 
     # parser.add_argument('-q', '--quality',
     #                     help='Quality (phred quality score) cutoff for UMI. Default is 13, \
     #                     that is UMI with qualities >= 13 will be kept. This \
@@ -231,14 +243,24 @@ def main():
 
     print >>sys.stderr, "-" * 72
     print >>sys.stderr, "Summary of UMI patterns at 5' and 3' ends:"
-    print >>sys.stderr, "-" * 72    
+    print >>sys.stderr, "-" * 72
     print >>sys.stderr, ui
     print >>sys.stderr, "-" * 72
+
+    if re.search("\.gz|\.gzip", args.output):
+        out = gzip.open(args.output, "wb")
+    else:
+        out = open(args.output, "w")
+    if re.search("\.gz|\.gzip", args.pcr_duplicate):
+        dup = gzip.open(args.pcr_duplicate, "wb")
+    else:
+        dup = open(args.pcr_duplicate, "w")
         
-    out = open(args.output, "w")
-    dup = open(args.pcr_duplicate, "w")
     if len(args.reads_with_improper_umi) != 0:
-        imp = open(args.reads_with_improper_umi, "w")
+        if re.search("\.gz|\.gzip", args.reads_with_improper_umi):
+            imp = open(args.reads_with_improper_umi, "wb")
+        else:
+            imp = open(args.reads_with_improper_umi, "w")
 
     stats = SraRunStats()
     if is_gzipped(fn):
@@ -247,11 +269,11 @@ def main():
     else:
         f = open(fn)
 
-    ## Small RNA insert and umi should be unique; otherwise, it is a duplicate
+    ## Small RNA insert + umi should be unique; otherwise, it is a duplicate
     insert_umi = {}
     while True:
         c += 1
-        if c%4==1:
+        if c % 4 == 1:
             r_name = f.readline().strip()
             if not r_name:
                 break
@@ -262,7 +284,8 @@ def main():
         else:
             r_qual = f.readline().strip()
             r = Read(r_name, r_seq, r_info, r_qual, "r1")
-            r_name_proc, r_seq_proc, r_info_proc, r_qual_proc, r_bc = process_sra_read(r, stats, ui)
+            r_name_proc, r_seq_proc, r_info_proc, \
+                r_qual_proc, r_bc = process_sra_read(r, stats, ui)
             if r_name_proc == "":
                 stats["n_without_proper_umi"] += 1
                 if len(args.reads_with_improper_umi) != 0:
@@ -291,6 +314,7 @@ def main():
 
     out.close()
     dup.close()
+    
     if len(args.reads_with_improper_umi) != 0:
         imp.close()
     print >>sys.stderr, ""
