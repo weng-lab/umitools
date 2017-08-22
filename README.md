@@ -9,7 +9,7 @@ If you would like to modify it, simply grab the version on GitHub:
 `git clone https://github.com/weng-lab/umitools.git` and use the python scripts in umitools/umitools.
 
 # How to process UMI small RNA-seq data
-1. To process a fastq (`raw.fq.gz`) file from your UMI small RNA-seq data, you can first remove the 3' end small RNA-seq adapter. In this example, I use fastx_clipper from the FASTX-Toolkit and the adapter sequence is `TGGAATTCTCGGGTGCCAAGG`:
+1. To process a fastq (`raw.fq.gz`) file from your UMI small RNA-seq data, you can first remove the 3' end small RNA-seq adapter. In this example, I use `fastx_clipper` from the FASTX-Toolkit and the adapter sequence is `TGGAATTCTCGGGTGCCAAGG`:
 
 `zcat raw.fq.gz | fastx_clipper -a TGGAATTCTCGGGTGCCAAGG -l 48 -c -Q33 2> raw.clipped.log | gzip -c - > clipped.fq.gz`
 
