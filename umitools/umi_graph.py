@@ -57,7 +57,6 @@ class UmiGraph:
 #             # Strategy: find the smallest terminal node, collapse it into its neighbor
 #             pass
 
-    
 def main():
     
     uc = {"AAAA": 1, "AAAC": 2, "AAAG": 1, "AAAT": 10,
