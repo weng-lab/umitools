@@ -196,7 +196,8 @@ def main():
     parser.add_argument('-i', '--input',
                         help='the input fastq file.', required=True)
     parser.add_argument('-o', '--output',
-                        help='the output fastq file', required=True)
+                        help='''the output fastq file containing reads that
+                        are not duplicates''', required=True)
     parser.add_argument('-d', '--pcr-duplicate',
                         help='the output fastq file containing PCR duplicates',
                         required=True) 
@@ -258,7 +259,8 @@ def main():
         
     if len(args.reads_with_improper_umi) != 0:
         if re.search("\.gz|\.gzip", args.reads_with_improper_umi):
-            imp = open(args.reads_with_improper_umi, "wb", compresslevel=4)
+            imp = gzip.open(args.reads_with_improper_umi, "wb",
+                            compresslevel=4)
         else:
             imp = open(args.reads_with_improper_umi, "w")
 
