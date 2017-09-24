@@ -2,6 +2,7 @@
 
 ## TODO: put the classes for RNA-seq here as well
 
+
 class SraUmiInfo:
     def __init__(this, umi_pat5, umi_pat3):
         '''Note that both should be lists so that it allows
@@ -49,8 +50,8 @@ class SraUmiInfo:
         return [mm, "".join(bc)]
 
     def check(this, r):
-        '''This function returns the total number of mismatches at 5' and
-        3' end UMIs, together with the barcode (the variable portion of
+        '''This function returns the total number of mismatches of UMI locators at 5' and
+        3' end of UMIs, together with the barcode (the variable portion of
         the UMI)
         '''
         mm5 = 100
