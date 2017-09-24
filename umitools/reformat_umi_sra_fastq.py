@@ -124,7 +124,9 @@ def main():
     #                     required=False, type=int, default=13)
     global N_MISMATCH_ALLOWED_IN_UMI_LOCATOR
     N_MISMATCH_ALLOWED_IN_UMI_LOCATOR = 1
-    c = 0
+    global DEBUG
+    DEBUG = False
+
     args = parser.parse_args()
     
     fn = args.input
@@ -159,7 +161,6 @@ def main():
             imp = open(args.reads_with_improper_umi, "w")
 
     stats = umi.SraRunStats()
-    print(is_gzipped(fn))
     if is_gzipped(fn):
         f = gzip.open(fn)
         sys.stderr.write("Input is gzipped.\n")
@@ -171,6 +172,7 @@ def main():
         # Does not allow erros in UMIs
         # Small RNA insert + umi should be unique; otherwise, it is a duplicate
         insert_umi = {}
+        c = 0
         while True:
             c += 1
             if c % 4 == 1:
@@ -237,6 +239,10 @@ def main():
         # A dictionary of dictionaries: insert2umi[insert]["AAAA"] = umi_count
         insert2umis = {}
         insertumi2read = {}
+        # rname2read keeps all reads so that we can figure out which reads are
+        # PCR duplicates
+        rname2read = {}
+        c = 0
         while True:
             c += 1
             if c % 4 == 1:
@@ -252,7 +258,7 @@ def main():
                 r = umi.SraRead(r_name, r_seq, r_info, r_qual, "r1")
                 r_name_proc, r_seq_proc, r_info_proc, \
                     r_qual_proc, r_bc = process_sra_read(r, stats, ui)
-
+                
                 if r_name_proc == "":
                     stats["n_without_proper_umi"] += 1
                     if len(args.reads_with_improper_umi) != 0:
@@ -266,7 +272,7 @@ def main():
                     r = umi.SraRead(r_name_proc, r_seq_proc, 
                                     r_info_proc, r_qual_proc, "r1")
                     insertumi2read[r_seq_proc + r_bc] = r
-
+                    rname2read[r_name_proc] = r
                     # Construct insert2umi
                     if r_seq_proc not in insert2umis:
                         insert2umis[r_seq_proc] = {}
@@ -276,47 +282,62 @@ def main():
                         insert2umis[r_seq_proc][r_bc] += 1
 
         # Now that everything is stored in dictionaries, use the graph
+        non_duplicate_rname = {}
         for i in insert2umis:
-            umis = insert2umis[i]
+            umis = insert2umis[i]  # umis is a dict: umi to umi count
+            # Build the graph if there are 2 or more reads for the same
+            # insert seq
+            repr_umis = []
             if (len(umis) > 1):
                 G = umi_graph.UmiGraph(umis)
-                if G.number_true_umi() != len(umis):
+
+                # If debugging mode is on and the UMI graph identifies more duplicates
+                # than the unique method, then print something
+                if DEBUG and G.number_true_umi() != len(umis):
                     print(umis)
-                    print("Number of true UMIs for this locus: {}".format(G.number_true_umi()))
+                    print("Number of true UMIs for this locus: {}".
+                          format(G.number_true_umi()))
+                    print("Representative UMIs for this UMI graph:")
                     print(G.get_repr_umi())
+                    print("Subgraphs of weakly connected components")
+                    clusters = G.get_umi_clusters()
+                    for c in clusters:
+                        print(c)
                     print()
-            
-        #             # print k
-        #             if k in insert_umi:
-        #                 stats["n_duplpicate"] += 1
-        #                 print(r_name_proc, file=dup)
-        #                 print(r_seq_proc, file=dup)
-        #                 print(r_info_proc, file=dup)
-        #                 print(r_qual_proc, file=dup)
-        #             else:
-        #                 stats["n_non_duplicate"] += 1
-        #                 insert_umi[k] = True
-        #                 print(r_name_proc, file=out)
-        #                 print(r_seq_proc, file=out)
-        #                 print(r_info_proc, file=out)
-        #                 print(r_qual_proc, file=out)
+                repr_umis = G.get_repr_umi()
+            # No need to build the graph if there is just 1 reads for this
+            # insert seq
+            else:
+                repr_umis = list(umis.keys())
+            for u in repr_umis:
+                r = insertumi2read[i + u]
+                stats["n_non_duplicate"] += 1
+                out.write(str(r))
+                non_duplicate_rname[r.r_name] = True
+        # Print duplicates
+        print("!")
+        print(len(non_duplicate_rname))
+        print(len(rname2read))
+        for rname in rname2read:
+            if rname not in non_duplicate_rname:
+                r = rname2read[rname]
+                dup.write(str(r))
+                stats["n_duplpicate"] += 1
 
         # out.close()
         # dup.close()
 
-        # if len(args.reads_with_improper_umi) != 0:
-        #     imp.close()
-        # sys.stderr.write("\n")
-        # sys.stderr.write("Stats: \n")
+        sys.stderr.write("\n")
+        sys.stderr.write("Stats: \n")
         # sys.stderr.write("Total input reads:\t" + str(c/4) + "\n")
-        # sys.stderr.write("Reads dropped due to improper UMI:\t" +
-        #                  str(stats["n_without_proper_umi"]) + "\n")
-        # sys.stderr.write("Final proper read:\t" +
-        #                  str(stats["n_with_proper_umi"]) + "\n")
-        # sys.stderr.write("\tReads that are duplicates:\t" +
-        #                  str(stats["n_duplpicate"]) + "\n")
-        # sys.stderr.write("\tReads that are non-duplicates:\t" +
-        #                  str(stats["n_non_duplicate"]))
+        sys.stderr.write("Reads dropped due to improper UMI:\t" +
+                         str(stats["n_without_proper_umi"]) + "\n")
+        sys.stderr.write("Final proper read:\t" +
+                         str(stats["n_with_proper_umi"]) + "\n")
+        sys.stderr.write("\tReads that are duplicates:\t" +
+                         str(stats["n_duplpicate"]) + "\n")
+        sys.stderr.write("\tReads that are non-duplicates:\t" +
+                         str(stats["n_non_duplicate"]) + "\n")
         
         
 if __name__ == "__main__":

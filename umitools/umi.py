@@ -117,3 +117,7 @@ class SraRead():
         self.r_qual = r_qual
         self.mate = mate
 
+    def __str__(self):
+        ret = "\n".join((self.r_name, self.r_seq, self.r_info, self.r_qual))
+        ret = ret + "\n"
+        return ret

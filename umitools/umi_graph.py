@@ -41,7 +41,6 @@ class UmiGraph:
         true UMIs and does not report the UMIs caused by PCR duplicates
         """
         ret = []
-        print(ret)
         for comp in nx.weakly_connected_components(self.UG):
             max_count = 0
             max_u = 0
@@ -50,7 +49,7 @@ class UmiGraph:
                 if cur_u["count"] > max_count:
                     max_count = cur_u["count"]
                     max_u = u
-            print(ret.append(max_u))
+            ret.append(max_u)
         return ret
             
     def print_graph(self):
@@ -83,6 +82,7 @@ def main():
           "CCCC": 101}
     G = UmiGraph(uc)
     print("Number of true UMIs for this locus: {}".format(G.number_true_umi()))
+    print("Subgraphs of weakly connected components")
     clusters = G.get_umi_clusters()
     for c in clusters:
         print(c)
