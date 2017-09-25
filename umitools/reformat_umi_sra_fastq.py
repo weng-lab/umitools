@@ -321,6 +321,7 @@ def main():
                 stats["n_non_duplicate"] += 1
                 out.write(str(r))
                 non_duplicate_rname[r.r_name] = True
+
         # Print duplicates
         for rname in rname2read:
             if rname not in non_duplicate_rname:
