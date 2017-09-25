@@ -4,10 +4,10 @@ import editdistance as ed
 
 
 class UmiGraph:
-    def __init__(self, uc):
+    def __init__(self, uc, max_ed=1):
         '''Given a dictionary in which UMI is key and UMI count is the 
         value, this function constructs a directed graph. Whenever two
-        nodes (a, b) have the edit distance as 1 AND a >= 2 * b -1, there
+        nodes (a, b) have the edit distance <= max_ed AND a >= 2 * b -1, there
         is a edge from a to b.
 '''
         self.UG = nx.DiGraph()
@@ -15,7 +15,7 @@ class UmiGraph:
             self.UG.add_node(u, count=uc[u])
         for u in uc:
             for u2 in uc:
-                if ed.eval(u, u2) == 1:
+                if u != u2 and ed.eval(u, u2) <= max_ed:
                     if self.get_count(u) >= 2 * self.get_count(u2) - 1:
                         # The edge direction:
                         # from large node (u) to small node (u2)

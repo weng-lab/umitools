@@ -20,11 +20,13 @@ def print2(a):
     
 def is_gzipped(filename):
     # 1F 8B 08 00 / gz magic number
+    # 1F 8B is the magic number. The 08 and 00 are not always.
     # In python 2 magic = (b'\x1f', b'\x8b', b'\x08', b'\x00') is fine
     # In python 3, I need to use magic = (b'\x1f', b'\x8b', b'\x08', b'\x00')
-    magic = (b'\x1f', b'\x8b', b'\x08', b'\x00')
+    # magic = (b'\x1f', b'\x8b', b'\x08', b'\x00')
+    magic = (b'\x1f', b'\x8b')
     with open(filename, 'rb') as handle:
-        s = unpack('cccc', handle.read(4))
+        s = unpack('cc', handle.read(2))
         return s == magic
 
     
@@ -96,9 +98,9 @@ def main():
                         The default is to throw away these reads. This is for \
                         debugging purposes',
                         required=False)
-    parser.add_argument('-e', '--allow-umi-errors', action="store_true",
-                        help="Turn on this option if you would like to allow errors \
-                        in UMIs.")
+    parser.add_argument('-e', '--errors-allowed', type=int, default=0,
+                        help="Setting it to >=1 allows errors in UMIs. \
+                        Otherwise, no errors are allowed in UMIs.")
     parser.add_argument('-v', '--verbose',
                         help='Also include detailed run info',
                         action="store_true")
@@ -114,6 +116,7 @@ def main():
                         fixed nt and N for variable nt in UMI. If there are
                         multiple patterns, separate them using comma''',
                         default='NNNGTCNNNTAGNNN')
+    parser.add_argument('--debug', help='More output for debugging', action="store_true")
     # Quality cutoff is not necessary as the tools for trimming 3' small RNA-seq adapters
     # already do this
     # parser.add_argument('-q', '--quality',
@@ -125,7 +128,6 @@ def main():
     global N_MISMATCH_ALLOWED_IN_UMI_LOCATOR
     N_MISMATCH_ALLOWED_IN_UMI_LOCATOR = 1
     global DEBUG
-    DEBUG = False
 
     args = parser.parse_args()
     
@@ -133,7 +135,8 @@ def main():
     verbose = args.verbose
     umi_pat5 = args.umi_pattern_5.split(",")
     umi_pat3 = args.umi_pattern_3.split(",")
-    use_umi_graph = args.allow_umi_errors
+    umi_errors_allowed = args.errors_allowed
+    DEBUG = args.debug
     ui = umi.SraUmiInfo(umi_pat5, umi_pat3)
 
     sys.stderr.write("-" * 72 + "\n")
@@ -141,44 +144,46 @@ def main():
     sys.stderr.write("-" * 72 + "\n")
     sys.stderr.write(str(ui) + "\n")
     sys.stderr.write("-" * 72 + "\n")
-    sys.stderr.write("Are UMI errors allowed? {}".format(use_umi_graph) +
-                     "\n")
+    sys.stderr.write("Number of UMI errors allowed: {}".
+                     format(umi_errors_allowed) + "\n")
 
     if re.search("\.gz|\.gzip", args.output):
-        out = gzip.open(args.output, "wb", compresslevel=4)
+        out = gzip.open(args.output, "wt", compresslevel=4)
     else:
         out = open(args.output, "w")
     if re.search("\.gz|\.gzip", args.pcr_duplicate):
-        dup = gzip.open(args.pcr_duplicate, "wb", compresslevel=4)
+        dup = gzip.open(args.pcr_duplicate, "wt", compresslevel=4)
     else:
         dup = open(args.pcr_duplicate, "w")
         
     if len(args.reads_with_improper_umi) != 0:
         if re.search("\.gz|\.gzip", args.reads_with_improper_umi):
-            imp = gzip.open(args.reads_with_improper_umi, "wb",
+            imp = gzip.open(args.reads_with_improper_umi, "wt",
                             compresslevel=4)
         else:
             imp = open(args.reads_with_improper_umi, "w")
 
     stats = umi.SraRunStats()
     if is_gzipped(fn):
-        f = gzip.open(fn)
+        f = gzip.open(fn, "rt")
         sys.stderr.write("Input is gzipped.\n")
     else:
         f = open(fn)
         
     # The two methods (unique and network-based) are implemented here
-    if not use_umi_graph:
+    if umi_errors_allowed == 0:
         # Does not allow erros in UMIs
         # Small RNA insert + umi should be unique; otherwise, it is a duplicate
         insert_umi = {}
         c = 0
         while True:
             c += 1
+            stats["n_read"] += 1
             if c % 4 == 1:
                 r_name = f.readline().strip()
                 if not r_name:
                     break
+                stats["n_read"] += 1
             elif c % 4 == 2:
                 r_seq = f.readline().strip()
             elif c % 4 == 3:
@@ -219,17 +224,18 @@ def main():
 
         if len(args.reads_with_improper_umi) != 0:
             imp.close()
-        sys.stderr.write("\n")
-        sys.stderr.write("Stats: \n")
-        sys.stderr.write("Total input reads:\t" + str(c/4) + "\n")
-        sys.stderr.write("Reads dropped due to improper UMI:\t" +
-                         str(stats["n_without_proper_umi"]) + "\n")
-        sys.stderr.write("Final proper read:\t" +
-                         str(stats["n_with_proper_umi"]) + "\n")
-        sys.stderr.write("\tReads that are duplicates:\t" +
-                         str(stats["n_duplpicate"]) + "\n")
-        sys.stderr.write("\tReads that are non-duplicates:\t" +
-                         str(stats["n_non_duplicate"]))
+        stats.report()
+        # sys.stderr.write("\n")
+        # sys.stderr.write("Stats: \n")
+        # sys.stderr.write("Total input reads:\t" + str(c/4) + "\n")
+        # sys.stderr.write("Reads dropped due to improper UMI:\t" +
+        #                  str(stats["n_without_proper_umi"]) + "\n")
+        # sys.stderr.write("Final proper read:\t" +
+        #                  str(stats["n_with_proper_umi"]) + "\n")
+        # sys.stderr.write("\tReads that are duplicates:\t" +
+        #                  str(stats["n_duplpicate"]) + "\n")
+        # sys.stderr.write("\tReads that are non-duplicates:\t" +
+        #                  str(stats["n_non_duplicate"]))
 
         print2("")
         if verbose:
@@ -249,6 +255,7 @@ def main():
                 r_name = f.readline().strip()
                 if not r_name:
                     break
+                stats["n_read"] += 1
             elif c % 4 == 2:
                 r_seq = f.readline().strip()
             elif c % 4 == 3:
@@ -289,7 +296,7 @@ def main():
             # insert seq
             repr_umis = []
             if (len(umis) > 1):
-                G = umi_graph.UmiGraph(umis)
+                G = umi_graph.UmiGraph(umis, max_ed=umi_errors_allowed)
 
                 # If debugging mode is on and the UMI graph identifies more duplicates
                 # than the unique method, then print something
@@ -315,29 +322,15 @@ def main():
                 out.write(str(r))
                 non_duplicate_rname[r.r_name] = True
         # Print duplicates
-        print("!")
-        print(len(non_duplicate_rname))
-        print(len(rname2read))
         for rname in rname2read:
             if rname not in non_duplicate_rname:
                 r = rname2read[rname]
                 dup.write(str(r))
                 stats["n_duplpicate"] += 1
 
-        # out.close()
-        # dup.close()
-
-        sys.stderr.write("\n")
-        sys.stderr.write("Stats: \n")
-        # sys.stderr.write("Total input reads:\t" + str(c/4) + "\n")
-        sys.stderr.write("Reads dropped due to improper UMI:\t" +
-                         str(stats["n_without_proper_umi"]) + "\n")
-        sys.stderr.write("Final proper read:\t" +
-                         str(stats["n_with_proper_umi"]) + "\n")
-        sys.stderr.write("\tReads that are duplicates:\t" +
-                         str(stats["n_duplpicate"]) + "\n")
-        sys.stderr.write("\tReads that are non-duplicates:\t" +
-                         str(stats["n_non_duplicate"]) + "\n")
+        out.close()
+        dup.close()
+        stats.report()
         
         
 if __name__ == "__main__":

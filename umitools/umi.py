@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import sys
 ## TODO: put the classes for RNA-seq here as well
 
 
@@ -104,6 +105,19 @@ class SraRunStats():
     
     def __setitem__(self, key, value):
         self.stats[key] = value
+
+    def report(self):
+        sys.stderr.write("\n")
+        sys.stderr.write("Stats: \n")
+        sys.stderr.write("Total input reads:\t" + str(self["n_read"]) + "\n")
+        sys.stderr.write("Reads dropped due to improper UMI:\t" +
+                         str(self["n_without_proper_umi"]) + "\n")
+        sys.stderr.write("Final proper read:\t" +
+                         str(self["n_with_proper_umi"]) + "\n")
+        sys.stderr.write("\tReads that are duplicates:\t" +
+                         str(self["n_duplpicate"]) + "\n")
+        sys.stderr.write("\tReads that are non-duplicates:\t" +
+                         str(self["n_non_duplicate"]) + "\n")
 
 
 class SraRead():
