@@ -1,10 +1,90 @@
 #!/usr/bin/env python3
 
 import sys
-## TODO: put the classes for RNA-seq here as well
+from struct import unpack
+
+
+def print2(a):
+    # print >>sys.stderr, a
+    sys.stderr.write(str(a) + "\n")
+
+
+class RsqRunStats():
+    """A class for stats used in RNA-seq data
+"""
+    def __init__(self):
+        self.stats = {}
+        self.stats["all_umi_locator"] = {}
+        self.stats["n_without_locator"] = 0
+        self.stats["n_with_locator"] = 0
+        # Those reads with N's before GGG
+        self.stats["n_with_ambiguous_umi"] = 0
+        # Those with A/C/G after GGG
+        self.stats["n_with_wrong_padding"] = 0
+        # Those having bad quality UMI w/ GGG and T and w/o N's
+        self.stats["n_bad_quality_umi"] = 0
+        # The rest
+        self.stats["n_good_reads"] = 0
+        # This stores counts of all UMIs for good reads only
+        self.stats["good_umi_locator"] = {}
+        # padding (usually T, or it can be A,T,C,G
+        self.stats["padding"] = {"A": 0, "C": 0, "G": 0, "T": 0, "N": 0}
+        # For ligation bias
+        self.stats["ligation"] = {"A": 0, "C": 0, "G": 0, "T": 0, "N": 0}
+        
+    def __getitem__(self, key):
+        return self.stats[key]
+    
+    def __setitem__(self, key, value):
+        self.stats[key] = value
+        
+    def summary(self):
+        print2("-" * 80)
+        print2("Total:\t" + str((c-1)/4) )
+        print2("Reads w/o locator:\t" + str(self["n_without_locator"]) )
+        print2("Reads w/ locator:\t" + str(self["n_with_locator"]) )
+        print2("-" * 80 )
+        print2("Reads w/ N's in UMI:\t" + str(self["n_with_ambiguous_umi"]) )
+        print2("Reads w/ wrong padding nt:\t" + str(self["n_with_wrong_padding"]) )
+        print2("Reads w/ low-quality UMI:\t" + str(self["n_bad_quality_umi"]) )
+        print2("-" * 80)
+        print2("Reads w/ proper UMI:\t" + str(self["n_good_reads"]) )
+        print2("-" * 80)
+        
+    def umi_padding_usage(self):
+        print2("UMI padding usage for good reads")
+        for i in self.stats["good_umi_locator"]:
+            print2( i + " " + str(self.stats["good_umi_locator"][i]) )
+        print2("UMI padding usage for all reads")
+        my_sorted = sorted(self.stats["all_umi_locator"].items(), key=operator.itemgetter(1), reverse=True)
+        for i in my_sorted:
+            print2( str(i[0]) + " " + str(i[1]) )
+            
+    def padding_usage(self):
+        for i in sorted(self.stats["padding"]):
+            print2(i + "\t" + str(self.stats["padding"][i]))
+            
+    def ligation_bias(self):
+        for i in sorted(self.stats["ligation"]):
+            print2(i + "\t" + str(self.stats["ligation"][i]))
+
+class RsqRead():
+    """Informtion for one RNA-seq read including r_name, r_seq, r_info, r_qual, mate
+    and so on...
+    """
+    def __init__(self, r_name, r_seq, r_info, r_qual, mate):
+        self.r_name = r_name
+        self.r_seq = r_seq
+        self.r_info = r_info
+        self.r_qual = r_qual
+        self.mate = mate
+        self.my_umi_locator = r_seq[umi_len : umi_len + umi_locator_len]
+        self.my_umi = my_umi = r_seq[0:umi_len]
+        self.my_umi_qual = r_qual[0:umi_len]
 
 
 class SraUmiInfo:
+    '''A class for UMI information in small RNA-seq'''
     def __init__(this, umi_pat5, umi_pat3):
         '''Note that both should be lists so that it allows
         the two or more 5' UMI patterns'''
@@ -135,3 +215,16 @@ class SraRead():
         ret = "\n".join((self.r_name, self.r_seq, self.r_info, self.r_qual))
         ret = ret + "\n"
         return ret
+
+
+def is_gzipped(filename):
+    # 1F 8B 08 00 / gz magic number
+    # 1F 8B is the magic number. The 08 and 00 are not always.
+    # In python 2 magic = (b'\x1f', b'\x8b', b'\x08', b'\x00') is fine
+    # In python 3, I need to use magic = (b'\x1f', b'\x8b', b'\x08', b'\x00')
+    # magic = (b'\x1f', b'\x8b', b'\x08', b'\x00')
+    magic = (b'\x1f', b'\x8b')
+    with open(filename, 'rb') as handle:
+        s = unpack('cc', handle.read(2))
+        return s == magic
+
