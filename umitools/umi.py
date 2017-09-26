@@ -154,7 +154,11 @@ class SraUmiInfo:
         # print "5' UMI mismatch %d, barcode %s" % (mm5, bc5)
         # print "3' UMI mismatch %d, barcode %s" % (mm3, bc3)
         return [mm5 + mm3, bc5 + bc3]
-        
+
+    def umi_locator_check(this, r):
+        '''Checks how many errors there are between the r and the umi locator
+'''
+    
     def extract_insert(this, r):
         '''This function returns the insert part of reads. In other words, this
         function extracts the actual small RNAs. It assumes all possible 5' UMI
