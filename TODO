@@ -1,0 +1,2 @@
+# Move some functions in reformat_umi_fastq.py to umi.py
+# Support more general UMI configuration (e.g. allowing users to input more complex UMI patterns)

@@ -80,7 +80,7 @@ def main():
     uc = {"AAAA": 1, "AAAC": 2, "AAAG": 1, "AAAT": 10,
           "GGGG": 100, "GGGA": 99, "GGGC": 50, "GGGT": 2,
           "CCCC": 101}
-    G = UmiGraph(uc)
+    G = UmiGraph(uc, max_ed=1)
     print("Number of true UMIs for this locus: {}".format(G.number_true_umi()))
     print("Subgraphs of weakly connected components")
     clusters = G.get_umi_clusters()

@@ -206,7 +206,7 @@ def main():
                     k = r_seq + "_" + r_bc
                     # print k
                     if k in insert_umi:
-                        stats["n_duplpicate"] += 1
+                        stats["n_duplicate"] += 1
                         print(r_name_proc, file=dup)
                         print(r_seq_proc, file=dup)
                         print(r_info_proc, file=dup)
@@ -316,6 +316,10 @@ def main():
             # insert seq
             else:
                 repr_umis = list(umis.keys())
+
+            if len(umis) != len(repr_umis):
+                print(umis)
+
             for u in repr_umis:
                 r = insertumi2read[i + u]
                 stats["n_non_duplicate"] += 1
@@ -327,7 +331,7 @@ def main():
             if rname not in non_duplicate_rname:
                 r = rname2read[rname]
                 dup.write(str(r))
-                stats["n_duplpicate"] += 1
+                stats["n_duplicate"] += 1
 
         out.close()
         dup.close()

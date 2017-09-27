@@ -15,14 +15,87 @@ __author__ = "Yu Fu"
 __license__ = "GPLv3"
 
 
-def is_gzipped(filename):
-    # 1F 8B 08 00 / gz magic number
-    magic = ('\x1f', '\x8b', '\x08', '\x00')
+# def is_gzipped(filename):
+#     # 1F 8B 08 00 / gz magic number
+#     magic = ('\x1f', '\x8b', '\x08', '\x00')
 
-    with open(filename, 'rb') as handle:
-        s = unpack('cccc', handle.read(4))
-        return s == magic
+#     with open(filename, 'rb') as handle:
+#         s = unpack('cccc', handle.read(4))
+#         return s == magic
 
+class RsqRunStats():
+    """A class for stats used in RNA-seq data
+"""
+    def __init__(self):
+        self.stats = {}
+        self.stats["all_umi_locator"] = {}
+        self.stats["n_without_locator"] = 0
+        self.stats["n_with_locator"] = 0
+        # Those reads with N's before GGG
+        self.stats["n_with_ambiguous_umi"] = 0
+        # Those with A/C/G after GGG
+        self.stats["n_with_wrong_padding"] = 0
+        # Those having bad quality UMI w/ GGG and T and w/o N's
+        self.stats["n_bad_quality_umi"] = 0
+        # The rest
+        self.stats["n_good_reads"] = 0
+        # This stores counts of all UMIs for good reads only
+        self.stats["good_umi_locator"] = {}
+        # padding (usually T, or it can be A,T,C,G
+        self.stats["padding"] = {"A": 0, "C": 0, "G": 0, "T": 0, "N": 0}
+        # For ligation bias
+        self.stats["ligation"] = {"A": 0, "C": 0, "G": 0, "T": 0, "N": 0}
+        
+    def __getitem__(self, key):
+        return self.stats[key]
+    
+    def __setitem__(self, key, value):
+        self.stats[key] = value
+        
+    def summary(self):
+        umi.print2("-" * 80)
+        umi.print2("Total:\t" + str((c-1)/4))
+        umi.print2("Reads w/o locator:\t" + str(self["n_without_locator"]))
+        umi.print2("Reads w/ locator:\t" + str(self["n_with_locator"]))
+        umi.print2("-" * 80 )
+        umi.print2("Reads w/ N's in UMI:\t" + str(self["n_with_ambiguous_umi"]))
+        umi.print2("Reads w/ wrong padding nt:\t" + str(self["n_with_wrong_padding"]))
+        umi.print2("Reads w/ low-quality UMI:\t" + str(self["n_bad_quality_umi"]))
+        umi.print2("-" * 80)
+        umi.print2("Reads w/ proper UMI:\t" + str(self["n_good_reads"]))
+        umi.print2("-" * 80)
+        
+    def umi_padding_usage(self):
+        print2("UMI padding usage for good reads")
+        for i in self.stats["good_umi_locator"]:
+            print2( i + " " + str(self.stats["good_umi_locator"][i]) )
+        print2("UMI padding usage for all reads")
+        my_sorted = sorted(self.stats["all_umi_locator"].items(), key=operator.itemgetter(1), reverse=True)
+        for i in my_sorted:
+            print2( str(i[0]) + " " + str(i[1]) )
+            
+    def padding_usage(self):
+        for i in sorted(self.stats["padding"]):
+            print2(i + "\t" + str(self.stats["padding"][i]))
+            
+    def ligation_bias(self):
+        for i in sorted(self.stats["ligation"]):
+            print2(i + "\t" + str(self.stats["ligation"][i]))
+
+
+class RsqRead():
+    """Informtion for one RNA-seq read including r_name, r_seq, r_info, r_qual, mate
+    and so on...
+    """
+    def __init__(self, r_name, r_seq, r_info, r_qual, mate):
+        self.r_name = r_name
+        self.r_seq = r_seq
+        self.r_info = r_info
+        self.r_qual = r_qual
+        self.mate = mate
+        self.my_umi_locator = r_seq[umi_len : umi_len + umi_locator_len]
+        self.my_umi = my_umi = r_seq[0:umi_len]
+        self.my_umi_qual = r_qual[0:umi_len]
 
 # @profile
 def process_read(read, stats):
@@ -170,11 +243,11 @@ def main():
     fn2 = args.right
     verbose = args.verbose
     if re.search("\.gz|\.gzip", args.left_out):
-        out1 = gzip.open(args.left_out, "wb", compresslevel=4)
+        out1 = gzip.open(args.left_out, "wt", compresslevel=4)
     else:
         out1 = open(args.left_out, "w")
     if re.search("\.gz|\.gzip", args.right_out):
-        out2 = gzip.open(args.right_out, "wb", compresslevel=4)
+        out2 = gzip.open(args.right_out, "wt", compresslevel=4)
     else:
         out2 = open(args.right_out, "w")
 
@@ -209,16 +282,16 @@ def main():
     # This stores the stats for each read
     stats = {}
     for i in ("r1", "r2"):
-        stats[i] = umi.RsqRunStats()
+        stats[i] = RsqRunStats()
     f1 = open(fn1)
     f2 = open(fn2)
-    if is_gzipped(fn1):
-        f1 = gzip.open(fn1)
+    if umi.is_gzipped(fn1):
+        f1 = gzip.open(fn1, "rt")
         umi.print2("r1 input is gzipped.")
     else:
         f1 = open(fn1)
-    if is_gzipped(fn2):
-        f2 = gzip.open(fn2)
+    if umi.is_gzipped(fn2):
+        f2 = gzip.open(fn2, "rt")
         umi.print2("r2 input is gzipped.")
     else:
         f2 = open(fn2)
@@ -238,8 +311,8 @@ def main():
         else:
             r1_qual = f1.readline().strip()
             r2_qual = f2.readline().strip()
-            r1 = umi.RsqRead(r1_name, r1_seq, r1_info, r1_qual, "r1")
-            r2 = umi.RsqRead(r2_name, r2_seq, r2_info, r2_qual, "r2")
+            r1 = RsqRead(r1_name, r1_seq, r1_info, r1_qual, "r1")
+            r2 = RsqRead(r2_name, r2_seq, r2_info, r2_qual, "r2")
             r1_name_proc, r1_seq_proc, r1_info_proc, r1_qual_proc, r1_bc = process_read(r1, stats)
             r2_name_proc, r2_seq_proc, r2_info_proc, r2_qual_proc, r2_bc = process_read(r2, stats)
             # print "#" + r1_name_proc + "#" + str(r1_name_proc == "") + "#" + str(r2_name_proc=="")
@@ -250,28 +323,35 @@ def main():
                 r1_name_proc = get_header_with_umi(r1_name_proc, r1_bc + r2_bc)
                 r2_name_proc = get_header_with_umi(r2_name_proc, r1_bc + r2_bc)            
                 n_proper_pair += 1
-                print >>out1, r1_name_proc
-                print >>out1, r1_seq_proc
-                print >>out1, r1_info_proc
-                print >>out1, r1_qual_proc
-                print >>out2, r2_name_proc
-                print >>out2, r2_seq_proc
-                print >>out2, r2_info_proc
-                print >>out2, r2_qual_proc
+                print(r1_name_proc, file=out1)
+                print(r1_seq_proc, file=out1)
+                print(r1_info_proc, file=out1)
+                print(r1_qual_proc, file=out1)
+                print(r2_name_proc, file=out2)
+                print(r2_seq_proc, file=out2)
+                print(r2_info_proc, file=out2)
+                print(r2_qual_proc, file=out2)
 
     f1.close()
     f2.close()
     # out1.close()
     # out2.close()
-    print >>sys.stderr, ""
+    # print >>sys.stderr, ""
+    sys.stderr.write("\n")
     for i in ("r1", "r2"):
-        print >>sys.stderr, "Stats for " + i
+        # print >>sys.stderr, "Stats for " + i
+        sys.stderr.write("Stats for " + i + "\n")
         stats[i].summary()
         
-    print >>sys.stderr, ""
-    print >>sys.stderr, "Additional reads dropped because its mate is dropped:\t" + str(n_additional_drop_due_to_mate)
-    print >>sys.stderr, "Final proper read pairs:\t" + str(n_proper_pair)
-        
+    # print >>sys.stderr, ""
+    umi.print2("")
+
+    # print >>sys.stderr, "Additional reads dropped because its mate is dropped:\t" + str(n_additional_drop_due_to_mate)
+    umi.print2("Additional reads dropped because its mate is dropped:\t" + 
+               str(n_additional_drop_due_to_mate))
+    # print >>sys.stderr, "Final proper read pairs:\t" + str(n_proper_pair)
+    umi.print2("Final proper read pairs:\t" + str(n_proper_pair))
+    
     umi.print2("")
     if verbose:
         for i in ("r1", "r2"):
