@@ -3,10 +3,77 @@
 import sys
 from struct import unpack
 
+__author__ = "Yu Fu"
+__license__ = "GPLv3"
+
 
 def print2(a):
     # print >>sys.stderr, a
     sys.stderr.write(str(a) + "\n")
+
+
+
+
+class RsqRunStats():
+    """A class for stats used in RNA-seq data
+"""
+    def __init__(self):
+        self.stats = {}
+        self.stats["n_read"] = 0
+        self.stats["all_umi_locator"] = {}
+        self.stats["n_without_locator"] = 0
+        self.stats["n_with_locator"] = 0
+        # Those reads with N's before GGG
+        self.stats["n_with_ambiguous_umi"] = 0
+        # Those with A/C/G after GGG
+        self.stats["n_with_wrong_padding"] = 0
+        # Those having bad quality UMI w/ GGG and T and w/o N's
+        self.stats["n_bad_quality_umi"] = 0
+        # The rest
+        self.stats["n_good_reads"] = 0
+        # This stores counts of all UMIs for good reads only
+        self.stats["good_umi_locator"] = {}
+        # padding (usually T, or it can be A,T,C,G
+        self.stats["padding"] = {"A": 0, "C": 0, "G": 0, "T": 0, "N": 0}
+        # For ligation bias
+        self.stats["ligation"] = {"A": 0, "C": 0, "G": 0, "T": 0, "N": 0}
+        
+    def __getitem__(self, key):
+        return self.stats[key]
+    
+    def __setitem__(self, key, value):
+        self.stats[key] = value
+        
+    def summary(self):
+        print2("-" * 80)
+        print2("Total:\t" + str(self["n_read"]))
+        print2("Reads w/o locator:\t" + str(self["n_without_locator"]))
+        print2("Reads w/ locator:\t" + str(self["n_with_locator"]))
+        print2("-" * 80)
+        print2("Reads w/ N's in UMI:\t" + str(self["n_with_ambiguous_umi"]))
+        print2("Reads w/ wrong padding nt:\t" + 
+               str(self["n_with_wrong_padding"]))
+        print2("Reads w/ low-quality UMI:\t" + str(self["n_bad_quality_umi"]))
+        print2("-" * 80)
+        print2("Reads w/ proper UMI:\t" + str(self["n_good_reads"]))
+        print2("-" * 80)
+        
+    def umi_padding_usage(self):
+        print2("UMI padding usage for good reads")
+        for i in self.stats["good_umi_locator"]:
+            print2( i + " " + str(self.stats["good_umi_locator"][i]) )
+        print2("UMI padding usage for all reads")
+        my_sorted = sorted(self.stats["all_umi_locator"].items(), key=operator.itemgetter(1), reverse=True)
+        for i in my_sorted:
+            print2( str(i[0]) + " " + str(i[1]) )
+            
+    def padding_usage(self):
+        for i in sorted(self.stats["padding"]):
+            print2(i + "\t" + str(self.stats["padding"][i]))
+            
+    def ligation_bias(self):
+        for i in sorted(self.stats["ligation"]):
+            print2(i + "\t" + str(self.stats["ligation"][i]))
 
 
 class SraUmiInfo:
@@ -164,4 +231,17 @@ def is_gzipped(filename):
     with open(filename, 'rb') as handle:
         s = unpack('cc', handle.read(2))
         return s == magic
+
+
+def is_good_phred(phred, qc):
+    """Check if all the qualities are above qc, that is, if one 
+nt has a quality score below qc, this function returns False
+"""
+    ret = True
+    for i in phred:
+        if i < qc:
+            ret = False
+            break
+    return ret
+
 

@@ -1,86 +1,14 @@
 #!/usr/bin/env python3
 
-# Still in the process from python 2 to 3
-# A few print statements need changing
-
 import gzip
 import sys
 import argparse
 import re
 from struct import unpack
-
 import umi
 
 __author__ = "Yu Fu"
 __license__ = "GPLv3"
-
-
-# def is_gzipped(filename):
-#     # 1F 8B 08 00 / gz magic number
-#     magic = ('\x1f', '\x8b', '\x08', '\x00')
-
-#     with open(filename, 'rb') as handle:
-#         s = unpack('cccc', handle.read(4))
-#         return s == magic
-
-class RsqRunStats():
-    """A class for stats used in RNA-seq data
-"""
-    def __init__(self):
-        self.stats = {}
-        self.stats["all_umi_locator"] = {}
-        self.stats["n_without_locator"] = 0
-        self.stats["n_with_locator"] = 0
-        # Those reads with N's before GGG
-        self.stats["n_with_ambiguous_umi"] = 0
-        # Those with A/C/G after GGG
-        self.stats["n_with_wrong_padding"] = 0
-        # Those having bad quality UMI w/ GGG and T and w/o N's
-        self.stats["n_bad_quality_umi"] = 0
-        # The rest
-        self.stats["n_good_reads"] = 0
-        # This stores counts of all UMIs for good reads only
-        self.stats["good_umi_locator"] = {}
-        # padding (usually T, or it can be A,T,C,G
-        self.stats["padding"] = {"A": 0, "C": 0, "G": 0, "T": 0, "N": 0}
-        # For ligation bias
-        self.stats["ligation"] = {"A": 0, "C": 0, "G": 0, "T": 0, "N": 0}
-        
-    def __getitem__(self, key):
-        return self.stats[key]
-    
-    def __setitem__(self, key, value):
-        self.stats[key] = value
-        
-    def summary(self):
-        umi.print2("-" * 80)
-        umi.print2("Total:\t" + str((c-1)/4))
-        umi.print2("Reads w/o locator:\t" + str(self["n_without_locator"]))
-        umi.print2("Reads w/ locator:\t" + str(self["n_with_locator"]))
-        umi.print2("-" * 80 )
-        umi.print2("Reads w/ N's in UMI:\t" + str(self["n_with_ambiguous_umi"]))
-        umi.print2("Reads w/ wrong padding nt:\t" + str(self["n_with_wrong_padding"]))
-        umi.print2("Reads w/ low-quality UMI:\t" + str(self["n_bad_quality_umi"]))
-        umi.print2("-" * 80)
-        umi.print2("Reads w/ proper UMI:\t" + str(self["n_good_reads"]))
-        umi.print2("-" * 80)
-        
-    def umi_padding_usage(self):
-        print2("UMI padding usage for good reads")
-        for i in self.stats["good_umi_locator"]:
-            print2( i + " " + str(self.stats["good_umi_locator"][i]) )
-        print2("UMI padding usage for all reads")
-        my_sorted = sorted(self.stats["all_umi_locator"].items(), key=operator.itemgetter(1), reverse=True)
-        for i in my_sorted:
-            print2( str(i[0]) + " " + str(i[1]) )
-            
-    def padding_usage(self):
-        for i in sorted(self.stats["padding"]):
-            print2(i + "\t" + str(self.stats["padding"][i]))
-            
-    def ligation_bias(self):
-        for i in sorted(self.stats["ligation"]):
-            print2(i + "\t" + str(self.stats["ligation"][i]))
 
 
 class RsqRead():
@@ -97,7 +25,7 @@ class RsqRead():
         self.my_umi = my_umi = r_seq[0:umi_len]
         self.my_umi_qual = r_qual[0:umi_len]
 
-# @profile
+
 def process_read(read, stats):
     """This function processes one read. The "mate" option can be "r1" or "r2".
     Returns 4 empty strings if the read is dropped
@@ -118,34 +46,40 @@ def process_read(read, stats):
         print(r_name)
         print("Original qual:\t" + r_qual)
         print("Original read:\t" + r_seq)
-        print("Locator:\t" + ' ' * 5 + r_seq[umi_len: umi_len + umi_locator_len])
+        print("Locator:\t" + ' ' * 5 + 
+              r_seq[umi_len: umi_len + umi_locator_len])
         print("UMI:\t\t" + r_seq[0: umi_len])
-        print("What's left:\t" + ' ' * 9 + r_seq[umi_len + umi_locator_len + umi_downstream_len: ])
-    my_umi_locator = read.my_umi_locator # r_seq[umi_len: umi_len + umi_locator_len]
-    my_umi = read.my_umi # r_seq[0:umi_len]
+        print("What's left:\t" + ' ' * 9 + 
+              r_seq[umi_len + umi_locator_len + 
+                    umi_downstream_len:])
+    my_umi_locator = read.my_umi_locator
+    my_umi = read.my_umi
     if my_umi_locator in stats[mate]["all_umi_locator"]:
         stats[mate]["all_umi_locator"][my_umi_locator] += 1
     else:
         stats[mate]["all_umi_locator"][my_umi_locator] = 1
     if my_umi_locator in umi_locators:
         stats[mate]["n_with_locator"] += 1
-        my_umi_qual = read.my_umi_qual # r_qual[0:umi_len]
+        my_umi_qual = read.my_umi_qual  # r_qual[0:umi_len]
         if my_umi.find("N") == -1:
             padding = r_seq[umi_len + umi_locator_len]
             if padding in umi_downstream:
                 stats[mate]["padding"][padding] += 1
-                if is_good_phred(my_umi_qual, qc):
-                    my_seq = r_seq[umi_len + umi_locator_len + umi_downstream_len: ]
+                if umi.is_good_phred(my_umi_qual, qc):
+                    my_seq = r_seq[umi_len + 
+                                   umi_locator_len + umi_downstream_len:]
                     stats[mate]["n_good_reads"] += 1
                     stats[mate]["ligation"][my_seq[0]] += 1
                     # I do not modify read name here,
-                    # since we need to store barcodes from both reads and put the
-                    # concatenated barcode into both reads to make downstream analysis easier
+                    # since we need to store barcodes from both reads and put
+                    # the concatenated barcode into both reads to make
+                    # downstream analysis easier
                     # ret_name = get_header_with_umi(r_name, my_umi)
                     ret_name = r_name
-                    ret_seq =  my_seq
+                    ret_seq = my_seq
                     ret_info = r_info
-                    ret_qual = r_qual[umi_len + umi_locator_len + umi_downstream_len: ]
+                    ret_qual = r_qual[umi_len + umi_locator_len + 
+                                      umi_downstream_len:]
                     ret_bc = my_umi
                     if my_umi_locator in stats[mate]["good_umi_locator"]:
                         stats[mate]["good_umi_locator"][my_umi_locator] += 1
@@ -158,35 +92,28 @@ def process_read(read, stats):
             else:
                 stats[mate]["n_with_wrong_padding"] += 1
                 if DEBUG:
-                    print("*Found one with wrong padding nucleotide (A/C/G):\t" + r_seq)
+                    print("*Found one with wrong padding nucleotide (A/C/G):\t" 
+                          + r_seq)
         else:
-            if DEBUG == True:
+            if DEBUG:
                 print("*Found one with N's in UMI:\t" + r_seq)
             stats[mate]["n_with_ambiguous_umi"] += 1
     else:
-        if DEBUG == True:
+        if DEBUG:
             print("*Found one without locator:\t" + r_seq)
         stats[mate]["n_without_locator"] += 1
     return ret_name, ret_seq, ret_info, ret_qual, ret_bc
 
+
 def get_header_with_umi(header, umi):
-    """This function inserts a UMI after the '@' symbol, making the downstream analysis easier
-"""
-    col=header.split(" ")
+    '''This function inserts a UMI after the '@' symbol, making the
+    downstream analysis easier
+    '''
+    col = header.split(" ")
     # return "@" + umi + "_" + header[1:] + " " + head[2]
     return col[0] + "_" + umi + " " + col[1]
-def is_good_phred(phred, qc):
-    """Check if all the qualities are above qc, that is, if one 
-nt has a quality score below qc, this function returns False
-"""
-    ret = True
-    for i in phred:
-        if i < qc:
-            ret = False
-            break
-    return ret
 
-# @profile
+
 def main():
     parser = argparse.ArgumentParser(description='A script to reformat reads in a UMI fastq file so that the name of each record contains the UMI',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -212,6 +139,10 @@ def main():
                         them by comma. e.g. A,C,G,T. The quality for this nt is
                         sometimes low, so the default is all possible four 
                         nucleotides''', default='A,C,G,T,N')
+    # An alternative way to specify the UMI pattern
+    parser.add_argument('--umi-pattern', help='''Set the UMI patterns.)
+    
+
     parser.add_argument('-q', '--quality',
                         help='''Quality (phred quality score) cutoff for UMI.
                         Default is 13, that is UMI with qualities >= 13 will
@@ -230,7 +161,7 @@ def main():
     global umi_locator_len
     global umi_downstream
     global umi_downstream_len
-    global c                          # Read count
+
     c = 0
     args = parser.parse_args()
     DEBUG = args.debug
@@ -282,7 +213,7 @@ def main():
     # This stores the stats for each read
     stats = {}
     for i in ("r1", "r2"):
-        stats[i] = RsqRunStats()
+        stats[i] = umi.RsqRunStats()
     f1 = open(fn1)
     f2 = open(fn2)
     if umi.is_gzipped(fn1):
@@ -297,15 +228,17 @@ def main():
         f2 = open(fn2)
     while True:
         c += 1
-        if c%4==1:
+        if c % 4 == 1:
             r1_name = f1.readline().strip()
             r2_name = f2.readline().strip()
             if not r1_name:
                 break
-        elif c%4==2:
+        elif c % 4 == 2:
             r1_seq = f1.readline().strip()
             r2_seq = f2.readline().strip()
-        elif c%4==3:
+            stats["r1"]["n_read"] += 1
+            stats["r2"]["n_read"] += 1
+        elif c % 4 == 3:
             r1_info = f1.readline().strip()
             r2_info = f2.readline().strip()
         else:
