@@ -116,6 +116,13 @@ def main():
                         fixed nt and N for variable nt in UMI. If there are
                         multiple patterns, separate them using comma''',
                         default='NNNGTCNNNTAGNNN')
+
+    # --force-graph is used for debugging. Ideally, when the network method
+    # does not connect nodes at all, it should output the same results
+    # with the 'unique' method.
+    parser.add_argument('--force-graph', help=argparse.SUPPRESS,
+                        action="store_true")
+
     parser.add_argument('--debug', help='More output for debugging', action="store_true")
     # Quality cutoff is not necessary as the tools for trimming 3' small RNA-seq adapters
     # already do this
@@ -137,6 +144,10 @@ def main():
     umi_pat3 = args.umi_pattern_3.split(",")
     umi_errors_allowed = args.errors_allowed
     DEBUG = args.debug
+    FORCE_GRAPH = args.force_graph
+    if FORCE_GRAPH:
+        print2("Debugging: force the use of network method even " 
+               "when no mismatch is allowed")
     ui = umi.SraUmiInfo(umi_pat5, umi_pat3)
 
     sys.stderr.write("-" * 72 + "\n")
@@ -171,7 +182,7 @@ def main():
         f = open(fn)
         
     # The two methods (unique and network-based) are implemented here
-    if umi_errors_allowed == 0:
+    if umi_errors_allowed == 0 and not FORCE_GRAPH:
         # Does not allow erros in UMIs
         # Small RNA insert + umi should be unique; otherwise, it is a duplicate
         insert_umi = {}
@@ -203,7 +214,7 @@ def main():
                 else:
                     r_name_proc = get_header_with_umi(r_name_proc, r_bc)
                     stats["n_with_proper_umi"] += 1
-                    k = r_seq + "_" + r_bc
+                    k = r_seq_proc + "_" + r_bc
                     # print k
                     if k in insert_umi:
                         stats["n_duplicate"] += 1
@@ -297,7 +308,6 @@ def main():
             repr_umis = []
             if (len(umis) > 1):
                 G = umi_graph.UmiGraph(umis, max_ed=umi_errors_allowed)
-
                 # If debugging mode is on and the UMI graph identifies more duplicates
                 # than the unique method, then print something
                 if DEBUG and G.number_true_umi() != len(umis):
