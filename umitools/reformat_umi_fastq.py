@@ -140,7 +140,7 @@ def main():
                         sometimes low, so the default is all possible four 
                         nucleotides''', default='A,C,G,T,N')
     # An alternative way to specify the UMI pattern
-    parser.add_argument('--umi-pattern', help='''Set the UMI patterns.)
+    parser.add_argument('--umi-pattern', help='''Set the UMI patterns.''')
     
 
     parser.add_argument('-q', '--quality',
@@ -149,6 +149,7 @@ def main():
                         be kept. This program assumes the phred quality scores
                         in the fastq file are using sanger format''',
                         required=False, type=int, default=13)
+
     parser.add_argument('-D', '--debug', help='Turn on debugging mode',
                         action="store_true")
 
