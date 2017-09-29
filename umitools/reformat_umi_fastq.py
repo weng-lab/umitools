@@ -115,10 +115,11 @@ def get_header_with_umi(header, umi):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='''A script to reformat
-    reads in a UMI fastq file so that the name of each record contains the
-    UMI. This script is also known as umitools extract',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(description='''
+A script to reformat
+reads in a UMI fastq file so that the name of each record contains the 
+UMI. This script is also known as umitools extract.''',
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-l', '--left', help='the input fastq file for r1.',
                         required=True)
     parser.add_argument('-r', '--right', help='the input fastq file for r2.',
@@ -132,24 +133,24 @@ def main():
     parser.add_argument('-v', '--verbose', help='Also include detailed stats for \
     UMI and padding usage', action="store_true")
     parser.add_argument('--umi-locator',
-                        help='''Set the UMI locators. If you have multiple, separate
-                        them by comma. e.g. GGG,TCA,ATC''',
+                        help="Set the UMI locators. If you have multiple, "
+                        "separate them by comma. e.g. GGG,TCA,ATC",
                         default='GGG,TCA,ATC')
     parser.add_argument('--umi-padding',
-                        help='''Set the nucleotide (for preventing ligation bias) 
-                        after the UMI locators. If you have multiple, separate
-                        them by comma. e.g. A,C,G,T. The quality for this nt is
-                        sometimes low, so the default is all possible four 
-                        nucleotides''', default='A,C,G,T,N')
+                        help='''
+Set the nucleotide (for preventing ligation bias)
+after the UMI locators. If you have multiple, separate
+them by comma. e.g. A,C,G,T. The quality for this nt is
+sometimes low, so the default is all possible four
+nucleotides''', default='A,C,G,T,N')
     # An alternative way to specify the UMI pattern
-    parser.add_argument('--umi-pattern', help='''Set the UMI patterns.''')
-    
+    parser.add_argument('--umi-pattern', help='Set the UMI patterns.')
 
     parser.add_argument('-q', '--quality',
-                        help='''Quality (phred quality score) cutoff for UMI.
-                        Default is 13, that is UMI with qualities >= 13 will
-                        be kept. This program assumes the phred quality scores
-                        in the fastq file are using sanger format''',
+                        help='Quality (phred quality score) cutoff for UMI.'
+                        'Default is 13, that is UMI with qualities >= 13 will'
+                        'be kept. This program assumes the phred quality scores'
+                        'in the fastq file are using sanger format',
                         required=False, type=int, default=13)
 
     parser.add_argument('-D', '--debug', help='Turn on debugging mode',

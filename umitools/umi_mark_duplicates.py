@@ -13,7 +13,7 @@ import umi
 __author__ = "Yu Fu"
 __license__ = "GPLv3"
 
-DEBUG = True
+DEBUG = False
 # A FASTQ file is first processed by reformat_umi_fastq.py to put the
 # barcode info in the fasta header. Then it is aligned by aligner such as
 # STAR. The bam file can then be processed by this script.
