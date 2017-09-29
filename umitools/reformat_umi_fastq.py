@@ -115,7 +115,9 @@ def get_header_with_umi(header, umi):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='A script to reformat reads in a UMI fastq file so that the name of each record contains the UMI',
+    parser = argparse.ArgumentParser(description='''A script to reformat
+    reads in a UMI fastq file so that the name of each record contains the
+    UMI. This script is also known as umitools extract',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-l', '--left', help='the input fastq file for r1.',
                         required=True)

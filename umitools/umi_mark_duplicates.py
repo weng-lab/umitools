@@ -163,14 +163,24 @@ def merge_bam(infile, refs):
 def print2(a):
     print >>sys.stderr, a
 
+
 def main():
-    parser = argparse.ArgumentParser(description='A pair of FASTQ files are first reformatted using reformat_umi_fastq.py and then is aligned to get the bam file. This script can parse the umi barcode in the name of each read to mark duplicates.')
-    parser.add_argument('-f', '--file', help='the input bam file', required=True)
-    parser.add_argument('-p', '--processes', help='number of processes', required=False, type=int, default=8)
+    parser = argparse.ArgumentParser(description='''A pair of FASTQ files are first
+    reformatted using reformat_umi_fastq.py and then is aligned to get the bam
+    file. This script can parse the umi barcode in the name of each read to
+    mark duplicates. This script is also known as umitools mark.''')
+    parser.add_argument('-f', '--file', 
+                        help='the input bam file', required=True)
+    parser.add_argument('-p', '--processes', 
+                        help='number of processes', required=False, type=int, default=8)
     # parser.add_argument('-c', '--chromosome', help='the chromosome that you want to process', required=True)
     # parser.add_argument('-a', '--add-tag', help='add a FM (five prime end of the mate) tag as the preprocessing step', action="store_true")
-    parser.add_argument('-d', '--debug', help='turn on debug mode', action="store_true")
-    parser.add_argument('-c', '--count', help='Count the number of raw reads for each locus (determined by pairs)', action="store_true", default=False)
+    parser.add_argument('-d', '--debug', 
+                        help='turn on debug mode', action="store_true")
+    parser.add_argument('-c', '--count', 
+                        help='''Count the number of raw reads 
+                        for each locus (determined by pairs)''',
+                        action="store_true", default=False)
     # parser.add_argument('-l', '--read-length', help='if read length is given, it can be used to more accurately mark duplicates', type=int, default=-1)
     # parser.add_argument('-o', '--output', help='the output file', required=True)
     args = parser.parse_args()
