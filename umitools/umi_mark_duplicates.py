@@ -1,23 +1,24 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
+import sys
+import argparse
+import os
+from multiprocessing import Process, Queue, Pool
+import pysam as ps
+import time
+import umi
 
 # Usage: python mark_duplicates_umi.py -f test.sorted.bam >test.dup_marked.bam 2>test.dup_marked.log
 
 __author__ = "Yu Fu"
 __license__ = "GPLv3"
 
-DEBUG = False
+DEBUG = True
 # A FASTQ file is first processed by reformat_umi_fastq.py to put the
 # barcode info in the fasta header. Then it is aligned by aligner such as
 # STAR. The bam file can then be processed by this script.
 # It will go through the bam file and search for inserts that align to the same
 # position and use UMI to mark all but one bam records as PCR duplicates
-import pysam as ps
-# from Bio.Seq import Seq
-import sys
-import argparse
-import os
-from multiprocessing import Process, Queue, Pool
-import time
 
 start_time = time.time()
 
@@ -37,7 +38,6 @@ start_time = time.time()
 ######################################################################
 # For a sorted bam file, in case 1, the 5' end of r1 and template length can determine the template;
 # in case 2, the 5' end of r2 and template length can determine the template
-# 
 
 # for kernprof
 # kernprof -l -v ~/repo/tools/mark_duplicates_umi.py -f test300000.sorted.bam
@@ -45,7 +45,8 @@ start_time = time.time()
 def mark_duplicates(infile, chromosome):
     bam = ps.AlignmentFile(infile, "rb")
     out = ps.AlignmentFile(infile + "." + chromosome + ".bam", "wb", template=bam)
-    print >>sys.stderr, "Processing chromosome: " + chromosome
+    # print >>sys.stderr, "Processing chromosome: " + chromosome
+    umi.print2("Processing chromosome: " + chromosome)
     r1fwd = -1
     r2fwd = -1
     if count_loc_flag == True:
@@ -63,16 +64,22 @@ def mark_duplicates(infile, chromosome):
     for read in bam.fetch(reference=chromosome):
         c += 1
         if c % 100000 == 0:
-            print >>sys.stderr, "Processed " + str(c) + " entries..."
+            # print >>sys.stderr, "Processed " + str(c) + " entries..."
+            umi.print2("Processed " + str(c) + " entries...")
         read_n = read.query_name
         read_bc = read_n.split("_")[1]
         read_chr = read.reference_id
         read5 = read.reference_start
         if DEBUG:
-            print >>sys.stderr, "read_info: 5'end: " + str(read5)
-            print >>sys.stderr, "read_info: Reference ID: " + str(read.reference_id)
-            print >>sys.stderr, "read_info: Barcode: " + read_bc
-            print >>sys.stderr, "read_info: Read: " + str(read)        
+            # print >>sys.stderr, "read_info: 5'end: " + str(read5)
+            # print >>sys.stderr, "read_info: Reference ID: " + str(read.reference_id)
+            # print >>sys.stderr, "read_info: Barcode: " + read_bc
+            # print >>sys.stderr, "read_info: Read: " + str(read)        
+            umi.print2("read_info: 5'end: " + str(read5))
+            umi.print2("read_info: Reference ID: " + str(read.reference_id))
+            umi.print2("read_info: Barcode: " + read_bc)
+            umi.print2("read_info: Read: " + str(read))
+
         if not read.is_reverse and read.is_read1:
             # We do not need to get abs(read.template_length) as it is guaranteed
             # to be positive here because we are only selecting the leftmost mate
@@ -84,10 +91,11 @@ def mark_duplicates(infile, chromosome):
                     counts_loc[locus_id] = 1
             read_id = (read5, read_bc, read.template_length)            
             if DEBUG:
-                print >>sys.stderr, read_id + "\t" + str(read)
+                umi.print2(str(read_id) + "\t" + str(read))
             if read_id in r1fwd_ids:
                 if DEBUG:
-                    print >>sys.stderr, "Found a duplicate (r1fwd): " + str(read)
+                    # print >>sys.stderr, "Found a duplicate (r1fwd): " + str(read)
+                    umi.print2("Found a duplicate (r1fwd): " + str(read))
                 r1fwd_dup[read_n] = 'x'
             else:
                 r1fwd_ids[read_id] = 0
@@ -107,10 +115,12 @@ def mark_duplicates(infile, chromosome):
                 else:
                     counts_loc[locus_id] = 1
             if DEBUG:
-                print >>sys.stderr, read_id + "\t" + str(read)
+                # print >>sys.stderr, read_id + "\t" + str(read)
+                umi.print2(read_id + "\t" + str(read))
             if read_id in r2fwd_ids:
                 if DEBUG:
-                    print >>sys.stderr, read_n, "Found a duplicate (r2fwd)" + str(read)
+                    # print >>sys.stderr, read_n, "Found a duplicate (r2fwd)" + str(read)
+                    umi.print2(str(read_n) + "Found a duplicate (r2fwd)" + str(read))
                 r2fwd_dup[read_n] = 'x'
             else:
                 r2fwd_ids[read_id] = 0
@@ -131,7 +141,8 @@ def mark_duplicates(infile, chromosome):
     out.close()
     if count_loc_flag:
         for locus_id in counts_loc:
-            print >>out_counts_loc, chromosome + "\t" + locus_id + "\t" + str(counts_loc[locus_id])
+            # print >>out_counts_loc, chromosome + "\t" + locus_id + "\t" + str(counts_loc[locus_id])
+            umi.print2(chromosome + "\t" + locus_id + "\t" + str(counts_loc[locus_id]))
 
 def mark_duplicates_worker(chromosome):
     mark_duplicates(infile, chromosome)
@@ -160,9 +171,6 @@ def merge_bam(infile, refs):
     output.close()
     ps.index(output_fn)
     
-def print2(a):
-    print >>sys.stderr, a
-
 
 def main():
     parser = argparse.ArgumentParser(description='''A pair of FASTQ files are first
@@ -199,23 +207,24 @@ def main():
     # mark_duplicates_helper(infile, processes=processes)
     bam_tmp = ps.AlignmentFile(infile, "rb")
     if not bam_tmp.has_index():
-        print >>sys.stderr, "Input file %s is being indexed." % infile
+        # print >>sys.stderr, "Input file %s is being indexed." % infile
+        umi.print2("Input file %s is being indexed." % infile)
         ps.index(infile)
     refs = bam_tmp.references
     f = lambda x: mark_duplicates(infile, x)
     p = Pool(processes)
     # Goddamned Pool does not accept lambda functions!
-    print2("Marking duplicates...")
+    umi.print2("Marking duplicates...")
     p.map(mark_duplicates_worker, refs)
     # mark_duplicates_worker("chr10")
-    print2("Marking duplicates is done.")
+    umi.print2("Marking duplicates is done.")
     t1 = time.time()
-    print2("--- %s seconds ---" % (t1 - start_time))
-    print2("Merging from %d files..." % len(refs))
+    umi.print2("--- %s seconds ---" % (t1 - start_time))
+    umi.print2("Merging from %d files..." % len(refs))
     merge_bam(infile, refs)
-    print2("Merging is done")
+    umi.print2("Merging is done")
     t2 = time.time()
-    print2("--- %s seconds ---" % (t2-t1))
+    umi.print2("--- %s seconds ---" % (t2-t1))
 
 if __name__ == "__main__":
     main()
