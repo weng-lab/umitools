@@ -81,8 +81,9 @@ def is_good_phred(phred, qc):
 
 # @profile
 def main():
-    desc = "A script to process reads in from UMI small RNA-seq. This script can handle \
-    gzipped files transparently."
+    desc = '''A script to process reads in from UMI small RNA-seq. This script can handle
+gzipped files transparently. This script is also known as
+umitools extract_small.'''
     parser = argparse.ArgumentParser(description=desc,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-i', '--input',
