@@ -2,14 +2,14 @@
 A toolset for handling sequencing data with unique molecular identifiers (UMIs)
 
 # Installation
-`pip install pyfaidx  # add --user if you want to install it to your own directory`
+`pip install umitools  # add --user if you want to install it to your own directory`
 
 If you would like to modify it, simply grab the version on GitHub:
 
 `git clone https://github.com/weng-lab/umitools.git` and use the python scripts in umitools/umitools.
 
 # How to process UMI small RNA-seq data
-1. To process a fastq (`raw.fq.gz`) file from your UMI small RNA-seq data, you can first remove the 3' end small RNA-seq adapter. In this example, I use `fastx_clipper` from the FASTX-Toolkit and the adapter sequence is `TGGAATTCTCGGGTGCCAAGG`:
+1. To process a fastq (`raw.fq.gz`) file from your UMI small RNA-seq data, you can first remove the 3' end small RNA-seq adapter. In this example, I use `fastx_clipper` from the [FASTX-Toolkit](http://hannonlab.cshl.edu/fastx_toolkit/) and the adapter sequence is `TGGAATTCTCGGGTGCCAAGG`:
 
 `zcat raw.fq.gz | fastx_clipper -a TGGAATTCTCGGGTGCCAAGG -l 48 -c -Q33 2> raw.clipped.log | gzip -c - > clipped.fq.gz`
 
@@ -17,11 +17,15 @@ If you would like to modify it, simply grab the version on GitHub:
 
 2. To identify UMIs, you can run
 
+`umitools extract_small -i clipped.fq.gz -o sra.umi.fq -d sra.dup.fq`
+
+Or, use the equivalent:
+
 `reformat_umi_sra_fastq.py -i clipped.fq.gz -o sra.umi.fq -d sra.dup.fq`
 
 Not sure if your libraries have high-quality UMIs at proper positions? Run the following to see which reads have improper UMIs.
 
-`reformat_umi_sra_fastq.py -i clipped.fq.gz -o sra.umi.fq -d sra.dup.fq --reads-with-improper-umi sra.improper_umi.fq`
+`umitools extract_small -i clipped.fq.gz -o sra.umi.fq -d sra.dup.fq --reads-with-improper-umi sra.improper_umi.fq`
 
 # How to process UMI RNA-seq data
 
