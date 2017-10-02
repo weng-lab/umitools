@@ -8,7 +8,7 @@ from codecs import open
 from os import path
 
 setup(name="umitools",
-      version='0.1.6',
+      version='0.2.0',
       description='A toolset for handling sequencing data with unique molecular identifiers (UMIs)',
       url='https://github.com/weng-lab/umitools',
       author="Yu Fu",
