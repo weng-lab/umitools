@@ -17,7 +17,7 @@ __license__ = "GPLv3"
 LOCI_EXP = list(range(0, 2000)) + list(range(2000, 100000, 500))
 
 # Testing
-LOCI_EXP = list(range(0, 100))
+# LOCI_EXP = list(range(0, 100))
 
 # Limit the pool size: if after any PCR cycle, the pool is larger that this, then downsample the pool
 # This should be larger than final_pool_size
