@@ -15,16 +15,24 @@ __license__ = "GPLv3"
 
 # Final one to use
 # LOCI_EXP = range(0, 2000) + range(2000, 100000, 500)
-LOCI_EXP = list(range(1, 2000)) + list(range(2000, 100000, 500))
+# LOCI_EXP = list(range(1, 2000)) + list(range(2000, 100000, 500))
 
 # Testing
 # LOCI_EXP = list(range(1, 100))
 
 # Limit the pool size: if after any PCR cycle, the pool is larger that this, then downsample the pool
 # This should be larger than final_pool_size
-# MAX_POOL_SIZE = 10000000
-MAX_POOL_SIZE = 10000000
+global MAX_POOL_SIZE
+MAX_POOL_SIZE = 1000000
 
+
+def n_err_reads(p):
+    n = 0
+    for i in p:
+        if i.species != i.seq:
+            n += 1
+    return n
+    
 
 def print2(a):
     print(a, file=sys.stderr)
@@ -47,7 +55,7 @@ PCR amplification.
         else:
             self.seq = args[1]
         
-    def amplify(self, prob=0.8, error=1e-4):
+    def amplify(self, prob=0.8, error=3e-5):
         ## Default PCR amplification efficiency
         mut = {'A': ('C', 'G', 'T'),
                'C': ('A', 'G', 'T'),
@@ -85,13 +93,13 @@ final sequence (after PCR and sequencing)
             (self.gid, self.species, self.seq)
 
     
-def add_sequencing_error(r, error=0.01):
+def add_sequencing_error(r, error=0.001):
     '''Returns a new UMIRead object containing the sequencing error
 '''
     mut = {'A': ('C', 'G', 'T'),
-    'C': ('A', 'G', 'T'),
-    'G': ('A', 'C', 'T'),
-    'T': ('A', 'C', 'G')
+           'C': ('A', 'G', 'T'),
+           'G': ('A', 'C', 'T'),
+           'T': ('A', 'C', 'G')
            }
     if error == 0:
         return (UMIRead(r.gid, r.species, r.seq))
@@ -163,60 +171,121 @@ def test3():
 
 
 def main():
-    parser = argparse.ArgumentParser(description='A simple in silico PCR simulator. It creates an initial set of molecules with absolute numbers ranging from 1 to 100000), simulates PCR and sequencing and and outputs the stats.',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-p', '--pcr-cycle', help='number of PCR cycles', required=True, type=int)
-    parser.add_argument('-l', '--umi-length', help='length of UMI', required=True, type=int)
-    parser.add_argument('--reads-single-locus', help='number of reads for simulating one locus. Using this option causes the scripts to simulate just one locus', required=False, type=int)
-    ## parser.add_argument('-s', '--pool-size', help='initial pool size (number of molecules before PCR)', required=True, type=int)
-    ## parser.add_argument('-o', '--output-size', help='final pool size (sequencing depth)', required=True, type=int)
-    parser.add_argument('-a', '--amplification-rate', help='successful rate of PCR amplification', required=False, type=float, default=0.7)
+    parser = argparse.ArgumentParser(description='A simple in silico PCR simulator. It creates an initial set of molecules for one locus, simulates PCR and sequencing and outputs the stats.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-p', '--pcr-cycle', help='number of PCR cycles', required=False, default=8, type=int)
+    parser.add_argument('-l', '--umi-length', help='length of UMI', required=False, default=10, type=int)
+    parser.add_argument('-s', '--pool-size', help='initial pool size (number of molecules before PCR)', required=False, type=int, default=20)
+    parser.add_argument('-o', '--output-size', help='final pool size (sequencing depth, i.e. number of reads sampled from the PCR amplified pool)', required=False, type=int, default=100)
+    parser.add_argument('-a', '--amplification-rate', help='successful rate of PCR amplification. The actual amplification rate is uniformally distributed between this number and 1', required=False, type=float, default=0.7)
     parser.add_argument('--pcr-error', help='error rate of PCR amplification', required=False, type=float, default=3e-5)
-    parser.add_argument('--sequencing-error', help='error rate of sequencing', required=False, type=float, default=0.001)    
+    parser.add_argument('--sequencing-error', help='error rate of sequencing', required=False, type=float, default=0.001)
+    parser.add_argument('--task', help='tasks to simulate multiple conditions (one is variable with others fixed). Seed is ignored when this option is used', required=False, type=str)
+    parser.add_argument('--seed', help='seed', required=False)
+    # parser.add_argument('--reads-single-locus', help='number of reads for simulating one locus. Using this option causes the scripts to simulate just one locus', required=False, type=int)
+            
     args = parser.parse_args()
-    
-    pool = []
     # k = 4
     k = args.umi_length
-    # pool_size = 100
-    # pool_size = args.pool_size
-    global LOCI_EXP
-    if args.reads_single_locus:
-        LOCI_EXP = [args.reads_single_locus]
-        print2("Only one locus will be simulated!")
-    # final_pool_size = 1000
-    # final_pool_size = args.output_size
-    final_pool_size = 10000000
-    # pcr_n = 10
+    pool_size = args.pool_size
+    final_pool_size = args.output_size
     pcr_n = args.pcr_cycle
     success_rate = args.amplification_rate
     pcr_error = args.pcr_error
     sequencing_error = args.sequencing_error
-    # for i in range(pool_size):
-    #     tmp = ''.join(random.choice(('A', 'C', 'G', 'T')) for _ in range(k))
-    #     pool.append(UMIRead("0", tmp))
-    print2("Total number of molecules to start with %d" % sum(LOCI_EXP))
-    for i in range(len(LOCI_EXP)):
-        for j in range(LOCI_EXP[i]):
-            tmp = ''.join(random.choice(('A', 'C', 'G', 'T')) for _ in range(k))
-            pool.append(UMIRead(LOCI_EXP[i], tmp))
+
+    print("# Input conditions:")
+    print("# UMI length: {}".format(k))
+    print("# PCR cycle: {}".format(pcr_n))
+    print("# Initial pool size: {}".format(pool_size))
+    print("# Final pool size: {}".format(final_pool_size))
+    print("# PCR success rate: between {} and 1".format(success_rate))
+    print("# Sequencing error rate: {}".format(sequencing_error))
+    print("# Task: {}".format(args.task))
+    
+    if args.task is None:
+        simulate(pool_size, final_pool_size, k, pcr_n,
+                 success_rate, pcr_error, sequencing_error, args.seed)
+        
+    elif args.task == "pcr_cycle":
+        print2("Variable PCR cycles. Other parameters are set as specified.")
+        for pcr_n in range(1, 36):
+            simulate_multiple(pool_size, final_pool_size, k, pcr_n,
+                              success_rate, pcr_error, sequencing_error)
+            
+    elif args.task == "umi_length":
+        for k in range(4, 22):
+            simulate_multiple(pool_size, final_pool_size, k, pcr_n,
+                              success_rate, pcr_error, sequencing_error)
+
+    elif args.task == "pcr_err":
+        a = [x / 10.0 for x in range(-70, -29, 1)]
+        a = [10**i for i in a]
+        for pcr_error in a:
+            simulate_multiple(pool_size, final_pool_size, k, pcr_n,
+                              success_rate, pcr_error, sequencing_error)            
+        
+    elif args.task == "sequencing_error":
+        a = [i / 10 for i in range(-50, -9, 1)]
+        a = [10 ** i for i in a]
+        for sequencing_error in a:
+            simulate_multiple(pool_size, final_pool_size, k, pcr_n,
+                              success_rate, pcr_error, sequencing_error)
+        
+    elif args.task == "amplification_rate":
+        a = [x/100 for x in range(10, 101)]
+        for success_rate in a:
+            simulate_multiple(pool_size, final_pool_size, k, pcr_n,
+                              success_rate, pcr_error, sequencing_error)
+
+    elif args.task == "pool_size":
+        for pool_size in range(10, 101, 2):
+            simulate_multiple(pool_size, final_pool_size, k, pcr_n,
+                              success_rate, pcr_error, sequencing_error)
+
+    elif args.task == "final_pool_size":
+        for final_pool_size in range(10, 401, 10):
+            simulate_multiple(pool_size, final_pool_size, k, pcr_n,
+                              success_rate, pcr_error, sequencing_error)
+
+
+def simulate_multiple(pool_size, final_pool_size, k, pcr_n,
+                      success_rate, pcr_error, sequencing_error,
+                      rep=100):
+    '''Instead of accepting seed in simulate(), this function accepts the
+    number of replicates.
+    '''
+    for i in range(rep):
+        simulate(pool_size, final_pool_size, k, pcr_n,
+                 success_rate, pcr_error, sequencing_error, seed=i)
+    
+    
+def simulate(pool_size, final_pool_size, k, pcr_n,
+             success_rate, pcr_error, sequencing_error, seed):
+    '''Simulates one locus
+'''
+    random.seed(a=seed)
+    print2("Total number of molecules to start with %d" % pool_size)
+    pool = []
+    for j in range(pool_size):
+        tmp = ''.join(random.choice(('A', 'C', 'G', 'T')) for _ in range(k))
+        pool.append(UMIRead("foo", tmp))
     for i in range(pcr_n):
         new_pool = []
         for p in pool:
             new_pool.extend(p.amplify(success_rate, pcr_error))
         print2("Done PCR cycle %d." % (i+1))
         print2("Current number of molecules %d." % (len(new_pool)))
+        # This prevents the pool from explosion
         if len(new_pool) <= MAX_POOL_SIZE:
             pool = new_pool
         else:
             pool = random.sample(new_pool, MAX_POOL_SIZE)
-    print2("Pool size after PCR: %d" % len(pool))
+            
+    print2("Number of reads after PCR: %d" % len(pool))
     if len(pool) > final_pool_size:
         pool2 = random.sample(pool, final_pool_size)
     else:
         pool2 = pool
-        print2('''If you are NOT debugging this script, \
-chances are some parameters are NOT set correctly.''')
     print2("Number of reads to be sequenced: %d" % len(pool2))
     n_err_read = 0
     for i in pool2:
@@ -230,76 +299,52 @@ chances are some parameters are NOT set correctly.''')
     print2("Number of reads with error(s) after sequencing: %d" % n_err_reads(final_pool))
 
     ## Print the stats of the original reads for each loci and final reads for each loci
-    loci_reads = {}
-    # print LOCI_EXP
-    for i in range(len(LOCI_EXP)):
-        loci_reads[LOCI_EXP[i]] = []
-    for p in final_pool:
-        loci_reads[p.gid].append(p)
     # print("%s\t%s\t%s" % ("initial_true_n_fragments", "final_n_reads", 
     #                       "final_n_reads_unique", "final_n_reads_1err", 
     #                       "final_n_reads_2err"))
 
     ########################################################################
-    # Allow errors in UMIs. Graph method
-    # TODO: test this block
+    # Allow 0 errors in UMIs. "Unique" method: len(umis)
     ########################################################################
-    locus2umi_count_net = {}
-    # A dict: locus id to a dict (umi to umi count)    
-    locus2umis = {}
-    for i in LOCI_EXP:
-        locus2umis[i] = {}
-        locus2umi_count_net[i] = 0
+    # dict from observed umi to umi count
+    umis = {}
+    # dict from true umi to umi count
+    umis_true = {}
     for i in final_pool:
-        locus = i.gid
         umi = i.seq
-        if locus not in locus2umis:
-            locus2umis[locus] = {}
-        if umi in locus2umis[locus]:
-            locus2umis[locus][umi] += 1
+        if umi in umis:
+            umis[umi] += 1
         else:
-            locus2umis[locus][umi] = 1
+            umis[umi] = 1
+
+        umi_true = i.species
+        if umi_true in umis_true:
+            umis_true[umi_true] += 1
+        else:
+            umis_true[umi_true] = 1
             
-    for locus in locus2umis:
-        umis = locus2umis[locus]
-        if len(umis) == 1:
-            locus2umi_count_net[locus] = 1
-        else:
-            G = umi_graph.UmiGraph(umis, max_ed=1)
-            repr_umis = G.get_repr_umi()
-            locus2umi_count_net[locus] = len(repr_umis)
-            if len(repr_umis) != len(umis):
-                print(umis)
-                print(repr_umis)
-                print(locus2umi_count_net[locus])
-                print("END")
+    ########################################################################
+    # Allow errors in UMIs. Graph (network) method
+    G = umi_graph.UmiGraph(umis, max_ed=1)
+    repr_umis = G.get_repr_umi()
     ########################################################################
 
-    print("\t".join(("starting_molecule",
-                     "n_reads", "n_unique_umi", "n_umi_1err")))
-    for gid in LOCI_EXP:
-        j = loci_reads[gid]
-        n_umi = len(set([jj.seq for jj in j]))
-        n_reads = len(j)
-        print("%d\t%d\t%d\t%d" % (gid, n_reads, n_umi,
-                                  locus2umi_count_net[gid]))
-
-
-    # DO NOT use this
-    # Print all reads (The output is impossiblely huge when I need to do thousands of
-    # simulations
-    # print("#true_seq\tread")
-    # for i in final_pool:
-    #     print(i)
-        
-
-def n_err_reads(p):
-    n = 0
-    for i in p:
-        if i.species != i.seq:
-            n += 1
-    return n
+    print("\t".join(("#starting_molecule", "n_reads", "n_umi_true",
+                     "n_umi_unique", "n_umi_1err",
+                     "pcr_cycle", "umi_length",
+                     "initial_pool_size", "final_pool_size",
+                     "min_amplification_rate", "pcr_error"
+                     "sequencing_error")))
+    my = (pool_size, final_pool_size, len(umis_true),
+          len(umis), len(repr_umis),
+          pcr_n, k,
+          pool_size, final_pool_size,
+          success_rate, pcr_error,
+          sequencing_error)
+    my_str = [str(i) for i in my]
     
+    print("\t".join(my_str))
+        
 
 if __name__ == "__main__":
     # test2()
