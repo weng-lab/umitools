@@ -3,6 +3,7 @@
 import random
 import sys
 import argparse
+import umi_graph
 
 __author__ = "Yu Fu"
 __license__ = "GPLv3"
@@ -14,10 +15,10 @@ __license__ = "GPLv3"
 
 # Final one to use
 # LOCI_EXP = range(0, 2000) + range(2000, 100000, 500)
-LOCI_EXP = list(range(0, 2000)) + list(range(2000, 100000, 500))
+LOCI_EXP = list(range(1, 2000)) + list(range(2000, 100000, 500))
 
 # Testing
-LOCI_EXP = list(range(0, 100))
+# LOCI_EXP = list(range(1, 100))
 
 # Limit the pool size: if after any PCR cycle, the pool is larger that this, then downsample the pool
 # This should be larger than final_pool_size
@@ -26,7 +27,7 @@ MAX_POOL_SIZE = 10000000
 
 
 def print2(a):
-   print(a, file=sys.stderr)
+    print(a, file=sys.stderr)
 
     
 class UMIRead:
@@ -244,34 +245,45 @@ chances are some parameters are NOT set correctly.''')
     # TODO: test this block
     ########################################################################
     locus2umi_count_net = {}
+    # A dict: locus id to a dict (umi to umi count)    
     locus2umis = {}
     for i in LOCI_EXP:
-        locus2umis[i] = []
+        locus2umis[i] = {}
         locus2umi_count_net[i] = 0
     for i in final_pool:
         locus = i.gid
         umi = i.seq
-        locus2umis[locus].append(umi)
+        if locus not in locus2umis:
+            locus2umis[locus] = {}
+        if umi in locus2umis[locus]:
+            locus2umis[locus][umi] += 1
+        else:
+            locus2umis[locus][umi] = 1
+            
     for locus in locus2umis:
+        umis = locus2umis[locus]
         if len(umis) == 1:
             locus2umi_count_net[locus] = 1
         else:
-            umis = locus2umis[locus]
             G = umi_graph.UmiGraph(umis, max_ed=1)
             repr_umis = G.get_repr_umi()
             locus2umi_count_net[locus] = len(repr_umis)
-   ########################################################################
+            if len(repr_umis) != len(umis):
+                print(umis)
+                print(repr_umis)
+                print(locus2umi_count_net[locus])
+                print("END")
+    ########################################################################
 
-        
-    for i in range(len(LOCI_EXP)):
-        j = loci_reads[LOCI_EXP[i]]
-        n_umi = len(set([jj.species for jj in j]))
-        n_reads = len(j)
-        print("%d\t%d\t%d" % (LOCI_EXP[i], n_reads, n_umi))
-
-
+    print("\t".join(("starting_molecule",
+                     "n_reads", "n_unique_umi", "n_umi_1err")))
     for gid in LOCI_EXP:
-        print(i)
+        j = loci_reads[gid]
+        n_umi = len(set([jj.seq for jj in j]))
+        n_reads = len(j)
+        print("%d\t%d\t%d\t%d" % (gid, n_reads, n_umi,
+                                  locus2umi_count_net[gid]))
+
 
     # DO NOT use this
     # Print all reads (The output is impossiblely huge when I need to do thousands of
