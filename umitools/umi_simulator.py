@@ -4,6 +4,7 @@ import random
 import sys
 import argparse
 import umi_graph
+import threading
 
 __author__ = "Yu Fu"
 __license__ = "GPLv3"
@@ -176,7 +177,7 @@ def main():
     parser.add_argument('-l', '--umi-length', help='length of UMI', required=False, default=10, type=int)
     parser.add_argument('-s', '--pool-size', help='initial pool size (number of molecules before PCR)', required=False, type=int, default=20)
     parser.add_argument('-o', '--output-size', help='final pool size (sequencing depth, i.e. number of reads sampled from the PCR amplified pool)', required=False, type=int, default=100)
-    parser.add_argument('-a', '--amplification-rate', help='successful rate of PCR amplification. The actual amplification rate is uniformally distributed between this number and 1', required=False, type=float, default=0.7)
+    parser.add_argument('-a', '--amplification-rate', help='successful rate of PCR amplification. The actual amplification rate is uniformally distributed between this number and 1', required=False, type=float, default=0.8)
     parser.add_argument('--pcr-error', help='error rate of PCR amplification', required=False, type=float, default=3e-5)
     parser.add_argument('--sequencing-error', help='error rate of sequencing', required=False, type=float, default=0.001)
     parser.add_argument('--task', help='tasks to simulate multiple conditions (one is variable with others fixed). Seed is ignored when this option is used', required=False, type=str)
@@ -209,6 +210,7 @@ def main():
     elif args.task == "pcr_cycle":
         print2("Variable PCR cycles. Other parameters are set as specified.")
         for pcr_n in range(1, 36):
+            print(pcr_n)
             simulate_multiple(pool_size, final_pool_size, k, pcr_n,
                               success_rate, pcr_error, sequencing_error)
             
@@ -250,11 +252,11 @@ def main():
 
 def simulate_multiple(pool_size, final_pool_size, k, pcr_n,
                       success_rate, pcr_error, sequencing_error,
-                      rep=100):
-    '''Instead of accepting seed in simulate(), this function accepts the
-    number of replicates.
+                      seeds=range(1, 100)):
+    '''Instead of accepting seed in simulate(), this function accepts a list of 
+    of seed.
     '''
-    for i in range(rep):
+    for i in seeds:
         simulate(pool_size, final_pool_size, k, pcr_n,
                  success_rate, pcr_error, sequencing_error, seed=i)
     
@@ -333,9 +335,9 @@ def simulate(pool_size, final_pool_size, k, pcr_n,
                      "n_umi_unique", "n_umi_1err",
                      "pcr_cycle", "umi_length",
                      "initial_pool_size", "final_pool_size",
-                     "min_amplification_rate", "pcr_error"
+                     "min_amplification_rate", "pcr_error",
                      "sequencing_error")))
-    my = (pool_size, final_pool_size, len(umis_true),
+    my = (pool_size, len(final_pool), len(umis_true),
           len(umis), len(repr_umis),
           pcr_n, k,
           pool_size, final_pool_size,
