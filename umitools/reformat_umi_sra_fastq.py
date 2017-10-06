@@ -190,7 +190,6 @@ umitools extract_small.'''
         c = 0
         while True:
             c += 1
-            stats["n_read"] += 1
             if c % 4 == 1:
                 r_name = f.readline().strip()
                 if not r_name:

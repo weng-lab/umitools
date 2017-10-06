@@ -173,7 +173,7 @@ def test3():
 
 def main():
     parser = argparse.ArgumentParser(description='A simple in silico PCR simulator. It creates an initial set of molecules for one locus, simulates PCR and sequencing and outputs the stats.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-p', '--pcr-cycle', help='number of PCR cycles', required=False, default=8, type=int)
+    parser.add_argument('-p', '--pcr-cycle', help='number of PCR cycles', required=False, default=10, type=int)
     parser.add_argument('-l', '--umi-length', help='length of UMI', required=False, default=10, type=int)
     parser.add_argument('-s', '--pool-size', help='initial pool size (number of molecules before PCR)', required=False, type=int, default=20)
     parser.add_argument('-o', '--output-size', help='final pool size (sequencing depth, i.e. number of reads sampled from the PCR amplified pool)', required=False, type=int, default=100)
