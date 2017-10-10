@@ -4,7 +4,7 @@ import random
 import sys
 import argparse
 import umi_graph
-import threading
+import multiprocessing as mp
 
 __author__ = "Yu Fu"
 __license__ = "GPLv3"
@@ -175,12 +175,13 @@ def main():
     parser = argparse.ArgumentParser(description='A simple in silico PCR simulator. It creates an initial set of molecules for one locus, simulates PCR and sequencing and outputs the stats.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-p', '--pcr-cycle', help='number of PCR cycles', required=False, default=10, type=int)
     parser.add_argument('-l', '--umi-length', help='length of UMI', required=False, default=10, type=int)
-    parser.add_argument('-s', '--pool-size', help='initial pool size (number of molecules before PCR)', required=False, type=int, default=20)
+    parser.add_argument('-s', '--pool-size', help='initial pool size (number of molecules before PCR)', required=False, type=int, default=10)
     parser.add_argument('-o', '--output-size', help='final pool size (sequencing depth, i.e. number of reads sampled from the PCR amplified pool)', required=False, type=int, default=100)
     parser.add_argument('-a', '--amplification-rate', help='successful rate of PCR amplification. The actual amplification rate is uniformally distributed between this number and 1', required=False, type=float, default=0.8)
     parser.add_argument('--pcr-error', help='error rate of PCR amplification', required=False, type=float, default=3e-5)
     parser.add_argument('--sequencing-error', help='error rate of sequencing', required=False, type=float, default=0.001)
-    parser.add_argument('--task', help='tasks to simulate multiple conditions (one is variable with others fixed). Seed is ignored when this option is used', required=False, type=str)
+    parser.add_argument('--task', help='tasks to simulate multiple conditions. Other PCR-related arguments are ignored when this option is used', required=False, type=str)
+    parser.add_argument('--cpu', help='Tasks supporting multiprocessing.', required=False, default=16)        
     parser.add_argument('--seed', help='seed', required=False)
     # parser.add_argument('--reads-single-locus', help='number of reads for simulating one locus. Using this option causes the scripts to simulate just one locus', required=False, type=int)
             
@@ -193,6 +194,7 @@ def main():
     success_rate = args.amplification_rate
     pcr_error = args.pcr_error
     sequencing_error = args.sequencing_error
+    n_cpu = int(args.cpu)
 
     print("# Input conditions:")
     print("# UMI length: {}".format(k))
@@ -206,65 +208,79 @@ def main():
     if args.task is None:
         simulate(pool_size, final_pool_size, k, pcr_n,
                  success_rate, pcr_error, sequencing_error, args.seed)
-        
+
     elif args.task == "pcr_cycle":
         print2("Variable PCR cycles. Other parameters are set as specified.")
         for pcr_n in range(1, 36):
             print(pcr_n)
             simulate_multiple(pool_size, final_pool_size, k, pcr_n,
-                              success_rate, pcr_error, sequencing_error)
+                              success_rate, pcr_error, sequencing_error,
+                              n_cpu=n_cpu)
             
     elif args.task == "umi_length":
         for k in range(4, 22):
             simulate_multiple(pool_size, final_pool_size, k, pcr_n,
-                              success_rate, pcr_error, sequencing_error)
+                              success_rate, pcr_error, sequencing_error,
+                              n_cpu=n_cpu)
 
     elif args.task == "pcr_err":
         a = [x / 10.0 for x in range(-70, -29, 1)]
         a = [10**i for i in a]
         for pcr_error in a:
             simulate_multiple(pool_size, final_pool_size, k, pcr_n,
-                              success_rate, pcr_error, sequencing_error)            
-        
+                              success_rate, pcr_error, sequencing_error,
+                              n_cpu=n_cpu)
+    
     elif args.task == "sequencing_error":
         a = [i / 10 for i in range(-50, -9, 1)]
         a = [10 ** i for i in a]
         for sequencing_error in a:
             simulate_multiple(pool_size, final_pool_size, k, pcr_n,
-                              success_rate, pcr_error, sequencing_error)
-        
+                              success_rate, pcr_error, sequencing_error,
+                              n_cpu=n_cpu)
+
     elif args.task == "amplification_rate":
         a = [x/100 for x in range(10, 101)]
         for success_rate in a:
             simulate_multiple(pool_size, final_pool_size, k, pcr_n,
-                              success_rate, pcr_error, sequencing_error)
-
+                              success_rate, pcr_error, sequencing_error,
+                              n_cpu=n_cpu)
+            
     elif args.task == "pool_size":
         for pool_size in range(10, 101, 2):
             simulate_multiple(pool_size, final_pool_size, k, pcr_n,
-                              success_rate, pcr_error, sequencing_error)
+                              success_rate, pcr_error, sequencing_error,
+                              n_cpu=n_cpu)
 
     elif args.task == "final_pool_size":
         for final_pool_size in range(10, 401, 10):
             simulate_multiple(pool_size, final_pool_size, k, pcr_n,
-                              success_rate, pcr_error, sequencing_error)
+                              success_rate, pcr_error, sequencing_error,
+                              n_cpu=n_cpu)
 
 
 def simulate_multiple(pool_size, final_pool_size, k, pcr_n,
                       success_rate, pcr_error, sequencing_error,
-                      seeds=range(1, 100)):
+                      n_cpu=16, seeds=range(100)):
     '''Instead of accepting seed in simulate(), this function accepts a list of 
     of seed.
     '''
-    for i in seeds:
-        simulate(pool_size, final_pool_size, k, pcr_n,
-                 success_rate, pcr_error, sequencing_error, seed=i)
+    n_seeds = len(seeds)
+    args = zip([pool_size] * n_seeds, [final_pool_size] * n_seeds,
+               [k] * n_seeds, [pcr_n] * n_seeds,
+               [success_rate] * n_seeds, [pcr_error] * n_seeds,
+               [sequencing_error] * n_seeds, seeds)
+    with mp.Pool(n_cpu) as p:
+        p.starmap(simulate, args)
+
+    # for i in seeds:
+    #     simulate(pool_size, final_pool_size, k, pcr_n,
+    #              success_rate, pcr_error, sequencing_error, seed=i)
     
     
 def simulate(pool_size, final_pool_size, k, pcr_n,
              success_rate, pcr_error, sequencing_error, seed):
-    '''Simulates one locus
-'''
+    '''Simulates one locus'''
     random.seed(a=seed)
     print2("Total number of molecules to start with %d" % pool_size)
     pool = []
