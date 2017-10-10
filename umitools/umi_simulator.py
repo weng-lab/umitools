@@ -24,7 +24,7 @@ __license__ = "GPLv3"
 # Limit the pool size: if after any PCR cycle, the pool is larger that this, then downsample the pool
 # This should be larger than final_pool_size
 global MAX_POOL_SIZE
-MAX_POOL_SIZE = 1000000
+MAX_POOL_SIZE = 100000
 
 
 def n_err_reads(p):
@@ -174,9 +174,9 @@ def test3():
 def main():
     parser = argparse.ArgumentParser(description='A simple in silico PCR simulator. It creates an initial set of molecules for one locus, simulates PCR and sequencing and outputs the stats.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-p', '--pcr-cycle', help='number of PCR cycles', required=False, default=10, type=int)
-    parser.add_argument('-l', '--umi-length', help='length of UMI', required=False, default=10, type=int)
-    parser.add_argument('-s', '--pool-size', help='initial pool size (number of molecules before PCR)', required=False, type=int, default=10)
-    parser.add_argument('-o', '--output-size', help='final pool size (sequencing depth, i.e. number of reads sampled from the PCR amplified pool)', required=False, type=int, default=100)
+    parser.add_argument('-l', '--umi-length', help='length of UMI', required=False, default=18, type=int)
+    parser.add_argument('-s', '--pool-size', help='initial pool size (number of molecules before PCR)', required=False, type=int, default=10000)
+    parser.add_argument('-o', '--output-size', help='final pool size (sequencing depth, i.e. number of reads sampled from the PCR amplified pool)', required=False, type=int, default=10)
     parser.add_argument('-a', '--amplification-rate', help='successful rate of PCR amplification. The actual amplification rate is uniformally distributed between this number and 1', required=False, type=float, default=0.8)
     parser.add_argument('--pcr-error', help='error rate of PCR amplification', required=False, type=float, default=3e-5)
     parser.add_argument('--sequencing-error', help='error rate of sequencing', required=False, type=float, default=0.001)
@@ -211,7 +211,7 @@ def main():
 
     elif args.task == "pcr_cycle":
         print2("Variable PCR cycles. Other parameters are set as specified.")
-        for pcr_n in range(1, 36):
+        for pcr_n in range(1, 32):
             print(pcr_n)
             simulate_multiple(pool_size, final_pool_size, k, pcr_n,
                               success_rate, pcr_error, sequencing_error,
@@ -247,13 +247,17 @@ def main():
                               n_cpu=n_cpu)
             
     elif args.task == "pool_size":
-        for pool_size in range(10, 101, 2):
+        a = [i / 10 for i in range(1, 61, 1)]
+        a = [int(10**i) for i in a]
+        for pool_size in a:
             simulate_multiple(pool_size, final_pool_size, k, pcr_n,
                               success_rate, pcr_error, sequencing_error,
                               n_cpu=n_cpu)
 
     elif args.task == "final_pool_size":
-        for final_pool_size in range(10, 401, 10):
+        a = [i / 10 for i in range(1, 51, 1)]
+        a = [int(10**i) for i in a]
+        for final_pool_size in a:
             simulate_multiple(pool_size, final_pool_size, k, pcr_n,
                               success_rate, pcr_error, sequencing_error,
                               n_cpu=n_cpu)
