@@ -212,7 +212,7 @@ def main():
     else:
         print("# Task: {}".format("just one run"))
     print("# Number for replicates for this task: {}".format(args.task_rep))
-    print("# Seeds:")
+    print("# Seeds: ", end="")
     print(list(seeds))
     
     if task is None:
