@@ -265,7 +265,7 @@ def main():
 
 def simulate_multiple(pool_size, final_pool_size, k, pcr_n,
                       success_rate, pcr_error, sequencing_error,
-                      n_cpu=16, seeds=range(100)):
+                      n_cpu=16, seeds=range(10000)):
     '''Instead of accepting seed in simulate(), this function accepts a list of 
     of seed.
     '''
