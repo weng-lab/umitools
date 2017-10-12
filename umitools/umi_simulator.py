@@ -285,7 +285,9 @@ def simulate_multiple(pool_size, final_pool_size, k, pcr_n,
                [success_rate] * n_seeds, [pcr_error] * n_seeds,
                [sequencing_error] * n_seeds, seeds)
     with mp.Pool(n_cpu) as p:
-        p.starmap(simulate, args)
+        ret = p.starmap(simulate, args)
+        for i in ret:
+            print(i, end="")
 
     # for i in seeds:
     #     simulate(pool_size, final_pool_size, k, pcr_n,
@@ -361,22 +363,22 @@ def simulate(pool_size, final_pool_size, k, pcr_n,
     repr_umis = G.get_repr_umi()
     ########################################################################
 
-    print("\t".join(("#starting_molecule", "n_reads", "n_umi_true",
+    ret = "\t".join(("#starting_molecule", "n_reads", "n_umi_true",
                      "n_umi_unique", "n_umi_1err",
                      "pcr_cycle", "umi_length",
                      "initial_pool_size", "final_pool_size",
                      "min_amplification_rate", "pcr_error",
-                     "sequencing_error")))
+                     "sequencing_error", "seed"))
     my = (pool_size, len(final_pool), len(umis_true),
           len(umis), len(repr_umis),
           pcr_n, k,
           pool_size, final_pool_size,
           success_rate, pcr_error,
-          sequencing_error)
+          sequencing_error, seed)
     my_str = [str(i) for i in my]
     
-    print("\t".join(my_str))
-        
+    ret2 = "\t".join(my_str)
+    return ret + "\n" + ret2 + "\n"
 
 if __name__ == "__main__":
     # test2()
