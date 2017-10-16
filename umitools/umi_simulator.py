@@ -264,7 +264,7 @@ def main():
                               n_cpu=n_cpu, seeds=seeds)
 
     elif task == "final_pool_size":
-        a = [i / 10 for i in range(1, 71, 1)]
+        a = [i / 10 for i in range(1, 51, 1)]
         a = [int(10**i) for i in a]
         for final_pool_size in a:
             simulate_multiple(pool_size, final_pool_size, k, pcr_n,
