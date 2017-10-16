@@ -175,8 +175,8 @@ def main():
     parser = argparse.ArgumentParser(description='A simple in silico PCR simulator. It creates an initial set of molecules for one locus, simulates PCR and sequencing and outputs the stats. It is necessary to specify the seed, since by default, this simulator uses 0 as the seed', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-p', '--pcr-cycle', help='number of PCR cycles', required=False, default=10, type=int)
     parser.add_argument('-l', '--umi-length', help='length of UMI', required=False, default=18, type=int)
-    parser.add_argument('-s', '--pool-size', help='initial pool size (number of molecules before PCR)', required=False, type=int, default=1000)
-    parser.add_argument('-o', '--output-size', help='final pool size (sequencing depth, i.e. number of reads sampled from the PCR amplified pool)', required=False, type=int, default=1000)
+    parser.add_argument('-s', '--pool-size', help='initial pool size (number of molecules before PCR)', required=False, type=int, default=100)
+    parser.add_argument('-o', '--output-size', help='final pool size (sequencing depth, i.e. number of reads sampled from the PCR amplified pool)', required=False, type=int, default=100)
     parser.add_argument('-a', '--amplification-rate', help='successful rate of PCR amplification. The actual amplification rate is uniformally distributed between this number and 1', required=False, type=float, default=0.8)
     parser.add_argument('--pcr-error', help='error rate of PCR amplification', required=False, type=float, default=3e-5)
     parser.add_argument('--sequencing-error', help='error rate of sequencing', required=False, type=float, default=0.001)
@@ -221,7 +221,14 @@ def main():
 
     elif task == "pcr_cycle":
         print2("Variable PCR cycles. Other parameters are set as specified.")
-        for pcr_n in range(1, 33):
+        for pcr_n in range(1, 21):
+            simulate_multiple(pool_size, final_pool_size, k, pcr_n,
+                              success_rate, pcr_error, sequencing_error,
+                              n_cpu=n_cpu, seeds=seeds)
+
+    elif task == "pcr_cycle_high":
+        print2("Variable PCR cycles. Other parameters are set as specified.")
+        for pcr_n in range(21, 31):
             simulate_multiple(pool_size, final_pool_size, k, pcr_n,
                               success_rate, pcr_error, sequencing_error,
                               n_cpu=n_cpu, seeds=seeds)
@@ -256,7 +263,7 @@ def main():
                               n_cpu=n_cpu, seeds=seeds)
             
     elif task == "pool_size":
-        a = [i / 100 for i in range(0, 501, 5)]
+        a = [i / 100 for i in range(0, 301, 5)]
         a = sorted(set([int(10**i) for i in a]))
         for pool_size in a:
             simulate_multiple(pool_size, final_pool_size, k, pcr_n,
@@ -264,8 +271,8 @@ def main():
                               n_cpu=n_cpu, seeds=seeds)
 
     elif task == "final_pool_size":
-        a = [i / 10 for i in range(1, 51, 1)]
-        a = [int(10**i) for i in a]
+        a = [i / 100 for i in range(0, 501, 5)]
+        a = sorted(set([int(10**i) for i in a]))
         for final_pool_size in a:
             simulate_multiple(pool_size, final_pool_size, k, pcr_n,
                               success_rate, pcr_error, sequencing_error,
