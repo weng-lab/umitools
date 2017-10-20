@@ -10,6 +10,8 @@ DEBUG = False
 
 def read_to_key(read):
     read_chr_id = read.reference_id
+    read_chr = read.reference_name
+    print(read_chr)
     read5 = read.reference_start
     read_strand = ''
     if read.is_reverse:
@@ -18,7 +20,7 @@ def read_to_key(read):
         read_strand = '+'
     # We need abs() here as we do not know if r1 is the leftmost read or not
     tl = abs(read.template_length)
-    k = ''.join((str(read_chr_id), ":", str(read5), "-", str(tl), read_strand))
+    k = ''.join((str(read_chr), ":", str(read5), "-", str(tl), read_strand))
     # print k
     return k
 
@@ -81,6 +83,19 @@ def print_hist(pos2read):
             print str(i) + "\t" + str(0)
 
             
+def get_hottest_n(pos2read, n):
+    '''Returns a list of hot loci (number of reads and position)
+'''
+    ret = []
+    lens = [len(pos2read[i]) for i in pos2read]
+    tmp = sorted(lens, reverse=True)
+    my_min = min(tmp[1:100])
+    for i in pos2read:
+        if len(pos2read[i]) >= my_min:
+            ret.append(str(len(pos2read[i])) + "\t" + i)
+    return(ret)
+
+
 def main():
     parser = argparse.ArgumentParser(description='This script can \
     find those "hot" loci, i.e. those loci that produce a huge number \
@@ -98,9 +113,23 @@ def main():
     containing reads of interest. The default is to output the bam records \
     with more than 100 reads', type=int,
                         default=100)
-    
+
+    parser.add_argument('--output-hottest', help='output the N hottest \
+    positions',
+                        type=str,
+                        default=None)
+
+    parser.add_argument('--hottest-n', help='specify how many hot loci \
+    are output',
+                        type=int,
+                        default=100)
+
     args = parser.parse_args()
     fn = args.file
+    
+    output_hottest = args.output_hottest
+    n_hottest = args.hottest_n
+    
     # fn = "Zamore.RSQ.UMI.B6.brain.17dpp.fmt.x_rRNA.mm10g.F400.sorted.bam"
     output_bam_flag = False
     output_bam_flag = args.output_bam
@@ -118,6 +147,9 @@ def main():
         output_bam(fn, pos2read, cutoff=output_bam_cutoff)
     print_hist(pos2read)
 
+    if output_hottest:
+        fh_hot = open(output_hottest, "w")
+        print >>fh_hot, "\n".join(get_hottest_n(pos2read, n_hottest))
 
 if __name__ == '__main__':
     main()
