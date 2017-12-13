@@ -9,9 +9,8 @@ DEBUG = False
 
 
 def read_to_key(read):
-    read_chr_id = read.reference_id
+    # read_chr_id = read.reference_id
     read_chr = read.reference_name
-    print(read_chr)
     read5 = read.reference_start
     read_strand = ''
     if read.is_reverse:
@@ -120,7 +119,7 @@ def main():
                         default=None)
 
     parser.add_argument('--hottest-n', help='specify how many hot loci \
-    are output',
+    are output. By default, it outputs the hottest 100 loci',
                         type=int,
                         default=100)
 

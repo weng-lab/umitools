@@ -183,7 +183,7 @@ def main():
     parser.add_argument('--task', help='tasks to simulate multiple conditions. Other PCR-related arguments are ignored when this option is used', required=False, type=str)
     parser.add_argument('--task-rep', help='number of replicates when doing tasks', required=False, type=int, default=100)    
     parser.add_argument('--cpu', help='Tasks supporting multiprocessing.', required=False, default=16)        
-    parser.add_argument('--seed', help='seed', type=int, required=False, default=0)
+    parser.add_argument('--seed', help='starting seed', type=int, required=False, default=0)
     # parser.add_argument('--reads-single-locus', help='number of reads for simulating one locus. Using this option causes the scripts to simulate just one locus', required=False, type=int)
             
     args = parser.parse_args()
@@ -216,9 +216,13 @@ def main():
     print(list(seeds))
     
     if task is None:
-        simulate(pool_size, final_pool_size, k, pcr_n,
-                 success_rate, pcr_error, sequencing_error, args.seed)
-
+        # simulate(pool_size, final_pool_size, k, pcr_n,
+        #          success_rate, pcr_error, sequencing_error, args.seed)
+        print2("No task specified. All parameters are set as specified.")
+        simulate_multiple(pool_size, final_pool_size, k, pcr_n,
+                          success_rate, pcr_error, sequencing_error,
+                          n_cpu=n_cpu, seeds=seeds)
+        
     elif task == "pcr_cycle":
         print2("Variable PCR cycles. Other parameters are set as specified.")
         for pcr_n in range(1, 21):
