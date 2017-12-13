@@ -23,7 +23,7 @@ setup(name="umitools",
                    'Programming Language :: Python :: 2.6',
                    'Programming Language :: Python :: 2.7',
                    ],
-      keywords='umi umitools unique molecular identifier',
+      keywords=['umi', 'umitools', 'unique molecular identifier', 'RNA', 'small RNA', 'sequencing'],
       install_requires=['pysam', 'editdistance', 'networkx'],
       packages=find_packages(exclude=['contrib', 'docs', 'tests']),
       # data_files=[('my_data', ['data/umitools.test.r1.fq.gz', 'data/umitools.test.r2.fq.gz'])],
@@ -38,3 +38,4 @@ setup(name="umitools",
               }
       # scripts=['scripts/reformat_umi_fastq', 'scripts/umi_mark_duplicates'],
 )
+
