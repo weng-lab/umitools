@@ -23,6 +23,7 @@ setup(name="umitools",
                    'Programming Language :: Python :: 2.6',
                    'Programming Language :: Python :: 2.7',
                    ],
+      download_url='https://github.com/weng-lab/umitools/archive/0.2.0.tar.gz', 
       keywords=['umi', 'umitools', 'unique molecular identifier', 'RNA', 'small RNA', 'sequencing'],
       install_requires=['pysam', 'editdistance', 'networkx'],
       packages=find_packages(exclude=['contrib', 'docs', 'tests']),
@@ -38,4 +39,3 @@ setup(name="umitools",
               }
       # scripts=['scripts/reformat_umi_fastq', 'scripts/umi_mark_duplicates'],
 )
-
