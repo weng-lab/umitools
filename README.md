@@ -41,19 +41,14 @@ Reads that are identified as PCR duplicates will have the flag `0x400`. If your 
 
 You can then feed the bam file without PCR duplicates to your downstream analysis.
 
-# Scripts for UMI RNA-seq
-### reformat_umi_fastq.py
-A script to reformat reads in a UMI fastq file so that the name of each record contains the UMI.
-
-### umi_mark_duplicates.py
-A pair of FASTQ files are first reformatted using reformat_umi_fastq.py and then is aligned to get the bam file. This script can parse the umi barcode in the name of each read to mark duplicates.
-
-### find_hot_loci.py
-This script can find those "hot" loci, i.e. those loci that produce a huge number of reads and then it outputs a histogram. Optionally, you can include -o option so that it also outputs the corresponding bam records.
+# Other utilities
 
 ### umi_simulator.py
 A simple in silico PCR simulator for UMI reads.
 
-# Scripts for UMI small RNA-seq
-### reformat_umi_sra_fastq.py
-This script idenitifies UMIs from UMI small RNA-seq data.
+### find_hot_loci.py
+This script can find those "hot" loci, i.e. those loci that produce a huge number of reads and then it outputs a histogram. Optionally, you can include -o option so that it also outputs the corresponding bam records.
+
+# Contact us
+Yu Fu (Yu.Fu {at} umassmed.edu)
+
