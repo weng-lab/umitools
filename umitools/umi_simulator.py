@@ -3,7 +3,7 @@
 import random
 import sys
 import argparse
-import umitools.umi_graph
+import umitools.umi_graph as umi_graph
 import multiprocessing as mp
 
 __author__ = "Yu Fu"
