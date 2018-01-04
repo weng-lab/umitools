@@ -2,6 +2,7 @@
 
 import sys
 from struct import unpack
+import operator
 
 __author__ = "Yu Fu"
 __license__ = "GPLv3"

@@ -1,0 +1,16 @@
+------------------------------------------------------------------------
+Summary of UMI patterns at 5' and 3' ends:
+------------------------------------------------------------------------
+5' UMI pattern: NNNCGANNNTACNNN,NNNATCNNNAGTNNN
+3' UMI pattern: NNNGTCNNNTAGNNN
+------------------------------------------------------------------------
+Number of UMI errors allowed: 0
+Input is gzipped.
+
+Stats: 
+Total input reads:	10000
+Reads dropped due to improper UMI:	808
+Final proper read:	9192
+	Reads that are duplicates:	3
+	Reads that are non-duplicates:	9189
+

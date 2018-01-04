@@ -6,8 +6,8 @@ import argparse
 from struct import unpack
 import re
 
-import umitools.umi
-import umitools.umi_graph
+import umitools.umi as umi
+import umitools.umi_graph as umi_graph
 
 __author__ = "Yu Fu"
 __license__ = "GPLv3"

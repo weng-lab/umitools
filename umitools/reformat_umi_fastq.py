@@ -5,7 +5,7 @@ import sys
 import argparse
 import re
 from struct import unpack
-import umitools.umi
+import umitools.umi as umi
 
 __author__ = "Yu Fu"
 __license__ = "GPLv3"
