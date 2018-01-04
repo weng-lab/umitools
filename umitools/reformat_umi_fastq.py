@@ -5,7 +5,7 @@ import sys
 import argparse
 import re
 from struct import unpack
-import umi
+import umitools.umi
 
 __author__ = "Yu Fu"
 __license__ = "GPLv3"
@@ -303,5 +303,7 @@ nucleotides''', default='A,C,G,T,N')
             umi.print2("=" * 80)
             umi.print2(i + " ligation bias")
             stats[i].ligation_bias()
+
+
 if __name__ == "__main__":
     main()

@@ -6,7 +6,7 @@ import os
 from multiprocessing import Process, Queue, Pool
 import pysam as ps
 import time
-import umi
+import umitools.umi
 
 # Usage: python mark_duplicates_umi.py -f test.sorted.bam >test.dup_marked.bam 2>test.dup_marked.log
 

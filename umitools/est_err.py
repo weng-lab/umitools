@@ -5,7 +5,7 @@
 
 # TODO: Do I need to do this for UMI RNA-seq?
 
-import umi
+import umitools.umi
 import argparse
 import gzip
 

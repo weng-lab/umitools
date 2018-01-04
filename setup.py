@@ -3,13 +3,17 @@
 
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
+
 # To use a consistent encoding
 from codecs import open
 from os import path
 
 setup(name="umitools",
-      version='0.2.0',
-      description='A toolset for handling sequencing data with unique molecular identifiers (UMIs)',
+      # Suffix a-z for PyPI test
+      # Remove the suffix before uploading to PyPI
+      version='0.2.0a',
+      description='A toolset for handling sequencing data with unique '
+      'molecular identifiers (UMIs)',
       url='https://github.com/weng-lab/umitools',
       author="Yu Fu",
       author_email="yfu@bu.edu",
@@ -22,20 +26,37 @@ setup(name="umitools",
                    'Programming Language :: Python :: 2',
                    'Programming Language :: Python :: 2.6',
                    'Programming Language :: Python :: 2.7',
+                   'Programming Language :: Python :: 3',
+                   'Programming Language :: Python :: 3.4',
+                   'Programming Language :: Python :: 3.5',
+                   'Programming Language :: Python :: 3.6',
                    ],
-      download_url='https://github.com/weng-lab/umitools/archive/0.2.0.tar.gz', 
-      keywords=['umi', 'umitools', 'unique molecular identifier', 'RNA', 'small RNA', 'sequencing'],
+      download_url='https://github.com/weng-lab/umitools/archive/0.2.0.tar.gz',
+      keywords=" ".join(["RNA-seq", "small RNA-seq",
+                         "unique molecular identifier",
+                         "UMI", "PCR duplicates", "PCR cycle",
+                         "starting material", "sequencing depth",
+                         "high-throughput sequencing",
+                         "deep sequencing", "transcriptome",
+                         "genome", "umitools", "RNA", "small RNA",
+                         "sequencing"]),
       install_requires=['pysam', 'editdistance', 'networkx'],
       packages=find_packages(exclude=['contrib', 'docs', 'tests']),
+      # packages=['umitools'],
       # data_files=[('my_data', ['data/umitools.test.r1.fq.gz', 'data/umitools.test.r2.fq.gz'])],
+      py_modules=["umitools/umi"],
       package_data={
-          "umitools": ['data/*.fq.gz'],
+          "sample": ['data/*.fq.gz'],
           },
       entry_points={
           'console_scripts': [
-              'reformat_fastq=umitools.reformat_umi_fastq:main',
-              'mark_duplicates=umitools.umi_mark_duplicates:main',              
+              'umi_reformat_fastq=umitools.reformat_umi_fastq:main',
+              'umi_reformat_sra_fastq=umitools.reformat_umi_sra_fastq:main',
+              'umi_mark_duplicates=umitools.umi_mark_duplicates:main',
+              'umi_simulator=umitools.umi_simulator:main'
               ]
               }
       # scripts=['scripts/reformat_umi_fastq', 'scripts/umi_mark_duplicates'],
 )
+
+
