@@ -2,11 +2,17 @@
 A toolset for handling sequencing data with unique molecular identifiers (UMIs)
 
 # Installation
+To install the toolset, run
+
 `pip install umitools  # add --user if you want to install it to your own directory`
 
-If you would like to modify it, simply grab the version on GitHub:
+Skip to the next section, unless you would like to modify it. You can grab the version on GitHub:
 
-`git clone https://github.com/weng-lab/umitools.git` and use the python scripts in umitools/umitools.
+`git clone https://github.com/weng-lab/umitools.git` 
+
+, modify it and then install from the modified source: 
+
+`pip install -e /path/to/umitools`
 
 # How to process UMI small RNA-seq data
 1. To process a fastq (`raw.fq.gz`) file from your UMI small RNA-seq data, you can first remove the 3' end small RNA-seq adapter. In this example, I use `fastx_clipper` from the [FASTX-Toolkit](http://hannonlab.cshl.edu/fastx_toolkit/) and the adapter sequence is `TGGAATTCTCGGGTGCCAAGG`:
