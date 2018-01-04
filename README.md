@@ -17,35 +17,23 @@ If you would like to modify it, simply grab the version on GitHub:
 
 2. To identify UMIs, you can run
 
-`umitools extract_small -i clipped.fq.gz -o sra.umi.fq -d sra.dup.fq`
-
-Or, use the equivalent:
-
-`reformat_umi_sra_fastq.py -i clipped.fq.gz -o sra.umi.fq -d sra.dup.fq`
+`umi_reformat_sra_fastq -i clipped.fq.gz -o sra.umi.fq -d sra.dup.fq`
 
 Not sure if your libraries have high-quality UMIs at proper positions? Run the following to see which reads have improper UMIs.
 
-`umitools extract_small -i clipped.fq.gz -o sra.umi.fq -d sra.dup.fq --reads-with-improper-umi sra.improper_umi.fq`
+`umi_reformat_sra_fastq -i clipped.fq.gz -o sra.umi.fq -d sra.dup.fq --reads-with-improper-umi sra.improper_umi.fq`
 
 # How to process UMI RNA-seq data
 
-1. Say the read1 and read2 files are `r1.fq.gz` and `r2.fq.gz`. In order to identify reads with proper UMIs and parse out their UMIs, you can simply run:
+1. Say the read1 and read2 files are `r1.fq.gz` and `r2.fq.gz`. In order to identify reads with proper UMIs and parse out their UMIs, you can run:
 
-`umitools extract -l r1.fq.gz -r r2.fq.gz -L r1.fmt.fq.gz -R r2.fmt.fq.gz`
-
-Or, use the equivalent:
-
-`reformat_umi_fastq.py -l r1.fq.gz -r r2.fq.gz -L r1.fmt.fq.gz -R r2.fmt.fq.gz`
+`umi_reformat_fastq -l r1.fq.gz -r r2.fq.gz -L r1.fmt.fq.gz -R r2.fmt.fq.gz`
 
 And it will give you some stats for your UMI RNA-seq data.
 
 2. Then you can use your favorite RNA-seq aligner (e.g. STAR) to map these reads to the genome and get a BAM/SAM file (e.g., `fmt.bam`). To mark the reads with PCR duplicates, assuming you want to use 8 threads, simply run
 
-`umitools mark -f fmt.bam -p 8`
-
-Or,
-
-`umi_mark_duplicates.py -f fmt.bam -p 8`
+`umi_mark_duplicates -f fmt.bam -p 8`
 
 Reads that are identified as PCR duplicates will have the flag `0x400`. If your downstream analysis (e.g., Picard) can take into consideration this flag, then you are good to go! Otherwise, you can remove those PCR duplicates:
 
