@@ -47,6 +47,11 @@ Reads that are identified as PCR duplicates will have the flag `0x400`. If your 
 
 You can then feed the bam file without PCR duplicates to your downstream analysis.
 
+# How UMI locators are handled inside umitools
+For UMI RNA-seq, the UMI locator in each read is required to exactly match GGG, TCA, or ATC. You can customize the locator sequence by setting `--umi-locator LOCATOR1,LOCATOR2,LOCATOR3,LOCATOR4` when you run `umi_reformat_fastq`.
+
+For UMI small RNA-seq, the default setting requires that the 5\' UMI locator in each read should match `NNNCGANNNTACNNN` or `NNNATCNNNAGTNNN`, AND 3\' UMI locator should match `NNNGTCNNNTAGNNN` where N's are not required to match and there is at most 1 error across all non-N positions. You can customized the locator sequence for small RNA-seq by setting `--umi-pattern-5` and `--umi-pattern-3`. You can further tweak the number of errors allowed by changing `N_MISMATCH_ALLOWED_IN_UMI_LOCATOR` in the script.
+
 # Other utilities
 
 ### umi_simulator.py
