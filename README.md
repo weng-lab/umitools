@@ -4,14 +4,14 @@ A toolset for handling sequencing data with unique molecular identifiers (UMIs)
 # Installation
 This tools set requires Python 3.
 
-To install the toolset, run
+To install `umitools`, run
 
 `pip3 install umitools  # add --user if you want to install it to your own directory`
 
 
 # How to process UMI small RNA-seq data
 
-1. To identify UMIs, using our test data:
+1. Identify UMIs (using our test data):
 `wget -O clipped.fq.gz "https://github.com/weng-lab/umitools/raw/master/umitools/testdata/umitools.test.sRNA-seq.fq.gz"`
 
 `umi_reformat_sra_fastq -i clipped.fq.gz -o sra.umi.fq -d sra.dup.fq`
@@ -21,15 +21,12 @@ Not sure if your libraries have high-quality UMIs at proper positions? Run the f
 `umi_reformat_sra_fastq -i clipped.fq.gz -o sra.umi.fq -d sra.dup.fq --reads-with-improper-umi sra.improper_umi.fq`
 
 # How to process UMI RNA-seq data
-0. Download the test data
+1. To identify reads with proper UMIs and parse out their UMIs, you can run:
 
 ```shell
-
 wget -O "r1.fq.gz" "https://github.com/weng-lab/umitools/raw/master/umitools/testdata/umitools.test.RNA-seq.r1.fq.gz"
 wget -O "r2.fq.gz" "https://github.com/weng-lab/umitools/raw/master/umitools/testdata/umitools.test.RNA-seq.r2.fq.gz"
 ```
-
-1. To identify reads with proper UMIs and parse out their UMIs, you can run:
 
 `umi_reformat_fastq -l r1.fq.gz -r r2.fq.gz -L r1.fmt.fq.gz -R r2.fmt.fq.gz`
 
