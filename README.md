@@ -33,9 +33,11 @@ Not sure if your libraries have high-quality UMIs at proper positions? Run the f
 # How to process UMI RNA-seq data
 0. Download the test data
 
-`wget -O "r1.fq.gz" "https://github.com/weng-lab/umitools/raw/master/umitools/testdata/umitools.test.RNA-seq.r1.fq.gz"`
+```shell
 
-`wget -O "r2.fq.gz" "https://github.com/weng-lab/umitools/raw/master/umitools/testdata/umitools.test.RNA-seq.r2.fq.gz"`
+wget -O "r1.fq.gz" "https://github.com/weng-lab/umitools/raw/master/umitools/testdata/umitools.test.RNA-seq.r1.fq.gz"
+wget -O "r2.fq.gz" "https://github.com/weng-lab/umitools/raw/master/umitools/testdata/umitools.test.RNA-seq.r2.fq.gz"
+```
 
 1. To identify reads with proper UMIs and parse out their UMIs, you can run:
 
