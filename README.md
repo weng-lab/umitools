@@ -10,9 +10,11 @@ To install `umitools`, run
 
 
 # How to process UMI small RNA-seq data
+#### 0. (Skip to the next step if you have data.) Download the test data
 
-1. Identify UMIs (using our test data):
 `wget -O clipped.fq.gz "https://github.com/weng-lab/umitools/raw/master/umitools/testdata/umitools.test.sRNA-seq.fq.gz"`
+
+#### 1. Identify UMIs (using our test data):
 
 `umi_reformat_sra_fastq -i clipped.fq.gz -o sra.umi.fq -d sra.dup.fq`
 
@@ -21,18 +23,20 @@ Not sure if your libraries have high-quality UMIs at proper positions? Run the f
 `umi_reformat_sra_fastq -i clipped.fq.gz -o sra.umi.fq -d sra.dup.fq --reads-with-improper-umi sra.improper_umi.fq`
 
 # How to process UMI RNA-seq data
-1. To identify reads with proper UMIs and parse out their UMIs, you can run:
+#### 0. (Skip to the next step if you have data.) Download the test data
 
 ```shell
 wget -O "r1.fq.gz" "https://github.com/weng-lab/umitools/raw/master/umitools/testdata/umitools.test.RNA-seq.r1.fq.gz"
 wget -O "r2.fq.gz" "https://github.com/weng-lab/umitools/raw/master/umitools/testdata/umitools.test.RNA-seq.r2.fq.gz"
 ```
 
+#### 1. To identify reads with proper UMIs and parse out their UMIs, you can run:
+
 `umi_reformat_fastq -l r1.fq.gz -r r2.fq.gz -L r1.fmt.fq.gz -R r2.fmt.fq.gz`
 
 And it will give you some stats for your UMI RNA-seq data.
 
-2. Then you can use your favorite RNA-seq aligner (e.g. STAR) to map these reads to the genome and get a BAM/SAM file (e.g., `fmt.bam`). To download an example, run
+#### 2. Then you can use your favorite RNA-seq aligner (e.g. STAR) to map these reads to the genome and get a BAM/SAM file (e.g., `fmt.bam`). To download an example, run
 
 `wget -O fmt.bam https://github.com/weng-lab/umitools/raw/master/umitools/testdata/umitools.test.RNA-seq.sorted.bam`
 
