@@ -10,11 +10,6 @@ To install the toolset, run
 
 
 # How to process UMI small RNA-seq data
-0. (Skip to the next step if small RNA-seq adapters are already removed.) To process a fastq (`raw.fq.gz`) file from your UMI small RNA-seq data, you can first remove the 3' end small RNA-seq adapter. For example, you can use `fastx_clipper` from the [FASTX-Toolkit](http://hannonlab.cshl.edu/fastx_toolkit/) and the adapter sequence is `TGGAATTCTCGGGTGCCAAGG`:
-
-`zcat raw.fq.gz | fastx_clipper -a TGGAATTCTCGGGTGCCAAGG -l 48 -c -Q33 2> raw.clipped.log | gzip -c - > clipped.fq.gz`
-
-`-l 48` specified the minimum length of the reads after the adapter removal, since I want to make sure all reads are at least 18 nt (18 nt + 15 nt in the 5' UMI + 15 nt in the 3' UMI).
 
 1. To identify UMIs, using our test data:
 `wget -O clipped.fq.gz "https://github.com/weng-lab/umitools/raw/master/umitools/testdata/umitools.test.sRNA-seq.fq.gz"`
@@ -68,7 +63,16 @@ A simple in silico PCR simulator for UMI reads.
 This script can find those "hot" loci, i.e. those loci that produce a huge number of reads and then it outputs a histogram. Optionally, you can include -o option so that it also outputs the corresponding bam records.
 
 # FAQ 
-Feeling adventurous? You can install the git version
+
+### How to remove 3' end small RNA-seq adapter
+There are many tools to remove adapters. This is just one example. To process a fastq (`raw.fq.gz`) file from your UMI small RNA-seq data, you can first remove the 3' end small RNA-seq adapter. For example, you can use `fastx_clipper` from the [FASTX-Toolkit](http://hannonlab.cshl.edu/fastx_toolkit/) and the adapter sequence is `TGGAATTCTCGGGTGCCAAGG`:
+
+`zcat raw.fq.gz | fastx_clipper -a TGGAATTCTCGGGTGCCAAGG -l 48 -c -Q33 2> raw.clipped.log | gzip -c - > clipped.fq.gz`
+
+where `-l 48` specified the minimum length of the reads after the adapter removal, since I want to make sure all reads are at least 18 nt (18 nt + 15 nt in the 5' UMI + 15 nt in the 3' UMI).
+
+
+### Feeling adventurous? You can install the git version
 1. Grab the version on GitHub:
 
 `git clone https://github.com/weng-lab/umitools.git` 
