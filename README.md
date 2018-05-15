@@ -2,17 +2,12 @@
 A toolset for handling sequencing data with unique molecular identifiers (UMIs)
 
 # Installation
+This tools set requires Python 3.
+
 To install the toolset, run
 
 `pip3 install umitools  # add --user if you want to install it to your own directory`
 
-Skip to the next section, unless you would like to modify it. You can grab the version on GitHub:
-
-`git clone https://github.com/weng-lab/umitools.git` 
-
-, modify it and then install from the modified source: 
-
-`pip3 install -e /path/to/umitools`
 
 # How to process UMI small RNA-seq data
 0. (Skip to the next step if small RNA-seq adapters are already removed.) To process a fastq (`raw.fq.gz`) file from your UMI small RNA-seq data, you can first remove the 3' end small RNA-seq adapter. For example, you can use `fastx_clipper` from the [FASTX-Toolkit](http://hannonlab.cshl.edu/fastx_toolkit/) and the adapter sequence is `TGGAATTCTCGGGTGCCAAGG`:
@@ -71,6 +66,16 @@ A simple in silico PCR simulator for UMI reads.
 
 ### find_hot_loci.py
 This script can find those "hot" loci, i.e. those loci that produce a huge number of reads and then it outputs a histogram. Optionally, you can include -o option so that it also outputs the corresponding bam records.
+
+# FAQ 
+Feeling adventurous? You can install the git version
+1. Grab the version on GitHub:
+
+`git clone https://github.com/weng-lab/umitools.git` 
+
+2. Install it in editable mode: 
+
+`pip3 install -e /path/to/umitools`
 
 # Contact us
 Yu Fu (Yu.Fu {at} umassmed.edu)
