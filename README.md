@@ -45,7 +45,11 @@ wget -O "r2.fq.gz" "https://github.com/weng-lab/umitools/raw/master/umitools/tes
 
 And it will give you some stats for your UMI RNA-seq data.
 
-2. Then you can use your favorite RNA-seq aligner (e.g. STAR) to map these reads to the genome and get a BAM/SAM file (e.g., `fmt.bam`). To mark the reads with PCR duplicates, assuming you want to use 8 threads, simply run
+2. Then you can use your favorite RNA-seq aligner (e.g. STAR) to map these reads to the genome and get a BAM/SAM file (e.g., `fmt.bam`). To download an example, run
+
+`wget -O fmt.bam https://github.com/weng-lab/umitools/raw/master/umitools/testdata/umitools.test.RNA-seq.sorted.bam`
+
+To mark the reads with PCR duplicates, assuming you want to use 8 threads, simply run
 
 `umi_mark_duplicates -f fmt.bam -p 8`
 
