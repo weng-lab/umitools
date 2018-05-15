@@ -1,0 +1,34 @@
+Quality cutoff in ASCII: .
+UMI locators: GGGTCAATC
+UMI padding: ACGTN
+r1 input is gzipped.
+r2 input is gzipped.
+
+Stats for r1
+--------------------------------------------------------------------------------
+Total:	10000
+Reads w/o locator:	562
+Reads w/ locator:	9438
+--------------------------------------------------------------------------------
+Reads w/ N's in UMI:	13
+Reads w/ wrong padding nt:	0
+Reads w/ low-quality UMI:	0
+--------------------------------------------------------------------------------
+Reads w/ proper UMI:	9425
+--------------------------------------------------------------------------------
+Stats for r2
+--------------------------------------------------------------------------------
+Total:	10000
+Reads w/o locator:	695
+Reads w/ locator:	9305
+--------------------------------------------------------------------------------
+Reads w/ N's in UMI:	1
+Reads w/ wrong padding nt:	0
+Reads w/ low-quality UMI:	0
+--------------------------------------------------------------------------------
+Reads w/ proper UMI:	9304
+--------------------------------------------------------------------------------
+
+Additional reads dropped because its mate is dropped:	323
+Final proper read pairs:	9203
+

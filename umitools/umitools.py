@@ -8,49 +8,51 @@ import sys
 import subprocess
 
 
-parser = argparse.ArgumentParser()
-msg = '''Use 'extract_small' to deduplicate a UMI small RNA-seq fastq file;
-use 'extract' for UMI RNA-seq to put UMIs into read names;
-use 'mark' for marking PCR duplicates given a bam/sam file;
-'''.format(sys.argv[0])
+def main():
+    parser = argparse.ArgumentParser()
+    msg = '''
+    For UMI RNA-seq:
+    First, use umitools reformat_fastq to identify UMIs in UMI RNA-seq
+    Then, use umitools umi_mark_duplicates to mark PCR duplicates
 
-parser.add_argument(help=msg,
-                    dest='subcommand')
+    For UMI small RNA-seq:
+    Use umitools reformat_sra_fastq to identify UMIs and PCR duplicates
 
-subcommand, params = parser.parse_known_args()
+    To simulate UMIs, use umitools simulate.
+    '''.format(sys.argv[0])
 
-a1 = ("extract", "reformat_umi_rsq", "reformat_umi"
-      "format_umi_rsq", "format_umi",
-      "extract_rsq", "extract_rna_seq")
+    parser.add_argument(help=msg,
+                        dest='subcommand')
 
-a2 = ("extract_small",
-      "reformat_umi_sra", "reformat_umi_small_rna",
-      "reformat_umi_small_rna_seq", "extract_sra",
-      "extract_small_rna", "extract_small_rna_seq",
-      "small", "smallrna", "smallrnaseq")
+    # base = os.path.dirname((os.path.realpath(__file__)))
 
-a3 = ("mark", "mark_duplicates", "mark_duplicate",
-      "rsq_mark_duplicates", "rsq_mark_duplicate")
+    # If there is not parameters, just print the help and exit
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(1)
 
-args = sys.argv
-base = os.path.dirname((os.path.realpath(__file__)))
+    # If there are parameters, consider first one as the subcommand
+    d = vars(parser.parse_args(sys.argv[1:2]))
+    if 'subcommand' in d:
+        subcmd = d['subcommand']
 
-if len(sys.argv) == 1:
-    print(msg)
-    sys.exit(0)
+    print(subcmd)
 
-sub_args = sys.argv[2:]
-if len(sub_args) == 0:
-    sub_args = ["-h"]
+    if len(sys.argv) > 2:
+        params = sys.argv[2:]
 
-subcommand = args[1]
+    else:
+        params = []
 
-# This allows the variants of options to work
-if subcommand in a1:
-    subprocess.call(["reformat_umi_fastq.py"] + sub_args)
-
-elif subcommand in a2:
-    subprocess.call(["reformat_umi_sra_fastq.py"] + sub_args)
-
-elif subcommand in a3:
-    subprocess.call(["umi_mark_duplicates.py"] + sub_args)
+    # Even though 'reformat_fastq', 'mark_duplicates' and 'reformat_sra_fastq'
+    # are the advertised subcomamnds, it is also able to handle similar subcommands
+    if subcmd in ["reformat_fastq", "umi_reformat_fastq"]:
+        subprocess.call(["umi_reformat_fastq"] + params)
+    elif subcmd in ["mark_duplicates"]:
+        subprocess.call(["umi_mark_duplicates"] + params)
+    elif subcmd in ["reformat_sra_fastq", "umi_reformat_sra_fastq"]:
+        subprocess.call(["umi_reformat_sra_fastq"] + params)
+    else:
+        sys.stderr.write("Unknown commands!")
+        parser.print_help()
+        sys.exit(1)
