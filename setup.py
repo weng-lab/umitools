@@ -11,7 +11,7 @@ from os import path
 setup(name="umitools",
       # Suffix a-z for PyPI test
       # Remove the suffix before uploading to PyPI
-      version='0.3.2',
+      version='0.3.3',
       description='A toolset for handling sequencing data with unique '
       'molecular identifiers (UMIs)',
       # Now explicitly requiring Python 3
