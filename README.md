@@ -40,7 +40,9 @@ umi_reformat_fastq -l r1.fq.gz -r r2.fq.gz -L r1.fmt.fq.gz -R r2.fmt.fq.gz
 
 And it will output some stats for your UMI RNA-seq data.
 
-#### 2. Then you can use your favorite RNA-seq aligner (e.g. STAR) to map these reads to the genome and get a BAM/SAM file (e.g., `fmt.bam`). To download an example, run
+#### 2. Then you can use your favorite RNA-seq aligner (e.g. STAR) to map these reads to the genome and get a BAM/SAM file (e.g., `fmt.bam`). 
+
+To download an example, run
 
 ```shell
 wget -O fmt.bam https://github.com/weng-lab/umitools/raw/master/umitools/testdata/umitools.test.RNA-seq.sorted.bam
