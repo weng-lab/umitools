@@ -69,11 +69,12 @@ For UMI small RNA-seq, the default setting requires that the 5\' UMI locator in 
 
 ## Other utilities
 
-#### umi_simulator.py
-A simple in silico PCR simulator for UMI reads.
+#### umi_simulator
+A simple in silico PCR simulator for UMI reads. Run it with `-h` to see options.
 
-#### find_hot_loci.py
+<!--- Comments are Fun #### find_hot_loci.py
 This script can find those "hot" loci, i.e. those loci that produce a huge number of reads and then it outputs a histogram. Optionally, you can include -o option so that it also outputs the corresponding bam records.
+---> 
 
 ## FAQ 
 
