@@ -79,7 +79,7 @@ This script can find those "hot" loci, i.e. those loci that produce a huge numbe
 ## FAQ 
 
 #### Other ways to run umitools?
-In addition to supplying subcommands to `umitools`, for example, `umitools mark_duplicates`, these commands can also be called individually. 
+In addition to providing subcommands to `umitools` (e.g., `umitools mark_duplicates`), these commands can also be called individually.
 
 * `umitools reformat_fastq` is equivalent to `umi_reformat_fastq`.
 * `umitools mark_duplicates` is equivalent to `umi_mark_duplicates`.
