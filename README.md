@@ -20,7 +20,7 @@ wget -O clipped.fq.gz "https://github.com/weng-lab/umitools/raw/master/umitools/
 #### 1. Identify UMIs:
 
 ```shell
-umi_reformat_sra_fastq -i clipped.fq.gz -o sra.umi.fq -d sra.dup.fq
+umitools reformat_sra_fastq -i clipped.fq.gz -o sra.umi.fq -d sra.dup.fq
 ```
 
 
@@ -35,7 +35,7 @@ wget -O "r2.fq.gz" "https://github.com/weng-lab/umitools/raw/master/umitools/tes
 #### 1. To identify reads with proper UMIs and parse out their UMIs, you can run:
 
 ```shell
-umi_reformat_fastq -l r1.fq.gz -r r2.fq.gz -L r1.fmt.fq.gz -R r2.fmt.fq.gz
+umitools reformat_fastq -l r1.fq.gz -r r2.fq.gz -L r1.fmt.fq.gz -R r2.fmt.fq.gz
 ```
 
 And it will output some stats for your UMI RNA-seq data.
@@ -51,7 +51,7 @@ wget -O fmt.bam https://github.com/weng-lab/umitools/raw/master/umitools/testdat
 To mark the reads with PCR duplicates (and assuming you want to use 8 threads), run
 
 ```shell
-umi_mark_duplicates -f fmt.bam -p 8
+umitools mark_duplicates -f fmt.bam -p 8
 ```
 
 And it will produce `fmt.deumi.sorted.bam` in which reads that are identified as PCR duplicates will have the flag `0x400`. If your downstream analysis (e.g., Picard) can take into consideration this flag, then you are good to go! Otherwise, you can just eliminate PCR duplicates:
@@ -93,7 +93,7 @@ where `-l 48` specified the minimum length of the reads after the adapter remova
 To see which reads have improper UMIs, run
 
 ```shell
-umi_reformat_sra_fastq -i clipped.fq.gz -o sra.umi.fq -d sra.dup.fq --reads-with-improper-umi sra.improper_umi.fq
+umitools reformat_sra_fastq -i clipped.fq.gz -o sra.umi.fq -d sra.dup.fq --reads-with-improper-umi sra.improper_umi.fq
 ```
 where `sra.umi.fq` contains all the non-duplicate reads and `sra.dup.fq` contains all duplicates.
 
