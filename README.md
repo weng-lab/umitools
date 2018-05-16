@@ -6,8 +6,9 @@ This tools set requires Python 3.
 
 To install `umitools`, run
 
-`pip3 install umitools  # add --user if you want to install it to your own directory
-
+```shell
+pip3 install umitools  # add --user if you want to install it to your own directory
+```
 
 ## How to process UMI small RNA-seq data
 #### 0. (Skip to the next step if you have data.) Download the test data
