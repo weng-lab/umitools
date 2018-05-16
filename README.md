@@ -78,6 +78,13 @@ This script can find those "hot" loci, i.e. those loci that produce a huge numbe
 
 ## FAQ 
 
+#### Other ways to run umitools?
+In addition to supplying subcommands to `umitools`, for example, `umitools mark_duplicates`, these commands can also be called individually. 
+
+* `umitools reformat_fastq` is equivalent to `umi_reformat_fastq`.
+* `umitools mark_duplicates` is equivalent to `umi_mark_duplicates`.
+* `umitools reformat_sra_fastq` is equivalent to `umi_reformat_sra_fastq`.
+
 #### How to remove 3' end small RNA-seq adapter
 There are many tools to remove adapters. This is just one example. To process a fastq (`raw.fq.gz`) file from your UMI small RNA-seq data, you can first remove the 3' end small RNA-seq adapter. For example, you can use `fastx_clipper` from the [FASTX-Toolkit](http://hannonlab.cshl.edu/fastx_toolkit/) and the adapter sequence is `TGGAATTCTCGGGTGCCAAGG`:
 
@@ -87,8 +94,7 @@ zcat raw.fq.gz | fastx_clipper -a TGGAATTCTCGGGTGCCAAGG -l 48 -c -Q33 2> raw.cli
 
 where `-l 48` specified the minimum length of the reads after the adapter removal, since I want to make sure all reads are at least 18 nt (18 nt + 15 nt in the 5' UMI + 15 nt in the 3' UMI).
 
-
-### Not sure if your libraries have high-quality UMIs at proper positions? 
+#### Not sure if your libraries have high-quality UMIs at proper positions? 
 
 To see which reads have improper UMIs, run
 
