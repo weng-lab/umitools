@@ -117,7 +117,7 @@ pip3 install -e /path/to/umitools
 ```
 
 ## Citation
-Fu, Y., Wu, P., Beane, T., Zamore, P.D., and Weng, Z. (2018). Elimination of PCR duplicates in RNA-seq and small RNA-seq using unique molecular identifiers. BioRxiv 251892.
+Fu, Y., Wu, P.-H., Beane, T., Zamore, P.D., and Weng, Z. (2018). Elimination of PCR duplicates in RNA-seq and small RNA-seq using unique molecular identifiers. BMC Genomics 19, 531.
 
 ## Contact us
 Yu Fu (Yu.Fu {at} umassmed.edu)
